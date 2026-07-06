@@ -1,0 +1,13 @@
+# AIION no tiene dependencias externas de Python.
+# Usa únicamente la librería estándar: json, os, re, subprocess, sys,
+# urllib, time, math, threading, shutil, gc, hashlib, sqlite3, tempfile,
+# signal, pathlib, datetime, collections.
+#
+# Dependencias del SISTEMA (no de pip) requeridas para funciones completas:
+#   - termux-api (paquete Termux) + app Termux:API — sensores, SMS, cámara, etc.
+#   - mpv — reproducción de audio TTS (Groq PlayAI)
+#   - Ollama — https://ollama.com (para modo Local)
+#
+# No es necesario ejecutar "pip install -r requirements.txt" para que
+# AIION funcione; este archivo se deja como referencia de que el proyecto
+# es intencionalmente ligero y no depende de paquetes de terceros.

@@ -1,0 +1,25 @@
+# AIION .gitignore — público
+
+# === CLAVES Y CREDENCIALES — NUNCA ===
+config/keys.py
+data/ollama_keys
+data/ollama_keys_cache.json
+data/aiion_memory.md
+data/aiion_history.jsonl
+data/access_log.txt
+aiion_keys.py
+
+# === PYTHON CACHES ===
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.db
+*.sqlite3
+memory/*.db
+
+# === LOCAL ===
+.env
+*.local
+.idea/
+.vscode/
