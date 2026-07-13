@@ -61,6 +61,24 @@ No requiere librerías externas de Python — está construido enteramente sobre
 **Para modo Nube:**
 - Una o más API keys de Ollama Cloud
 
+## 🧩 Arquitectura modular
+
+Desde v0.2, AIION dejó de ser un solo archivo de 1591 líneas y se organizó en un paquete Python:
+
+```
+aiion/
+├── core.py           # Orquestador: system prompt, loop del agente, comandos internos, main()
+├── config.py         # Rutas y constantes compartidas
+├── memory/            # RAM Guard, índice cognitivo, memoria persistente L2/L3
+├── sensors/            # 17 recolectores + daemon en background
+├── voice/              # TTS (Groq/termux) y STT
+├── llm/                 # Cliente Ollama (local/cloud) y pool de API keys
+├── tools/               # Las 28 tools organizadas por dominio + registry central
+└── cli/                  # Paleta de colores y helpers de terminal
+```
+
+Ver [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) para el detalle completo de cada módulo.
+
 ## 🚀 Instalación
 
 ### En Android (Termux)
@@ -81,7 +99,7 @@ cd AIION
 export GROQ_API_KEY="tu_api_key_aqui"
 
 # 5. Ejecutar
-python aiion_core.py
+python main.py
 ```
 
 ### En Linux (PC)
@@ -98,7 +116,7 @@ curl -fsSL https://ollama.com/install.sh | sh
 export GROQ_API_KEY="tu_api_key_aqui"
 
 # 4. Ejecutar
-python3 aiion_core.py
+python3 main.py
 ```
 
 > Nota: las funciones de Android (sensores, SMS, llamadas, cámara, notificaciones) requieren `termux-api` y solo funcionan dentro de Termux. En Linux de escritorio, AIION corre igual pero esas tools específicas de Android no tendrán datos disponibles.
@@ -111,12 +129,16 @@ Al iniciar, AIION te pedirá elegir modo Local o Nube. Para modo Nube, guarda tu
 ~/AIION/data/ollama_keys
 ```
 
-o exporta la variable de entorno `OLLAMA_API_KEY`. AIION detecta automáticamente cuántas keys tienes disponibles y rota entre ellas.
+o exporta la variable de entorno `OLLAMA_API_KEY`. AIION detecta automáticamente cuántas keys tienes disponibles y rota entre ellas. También puedes usar el gestor interactivo:
+
+```bash
+python aiion_keys.py
+```
 
 ## 💻 Uso
 
 ```bash
-python aiion_core.py
+python main.py
 ```
 
 Al arrancar, elige el modo (Local o Nube) y el modelo. Luego puedes interactuar en lenguaje natural o usar comandos internos:
