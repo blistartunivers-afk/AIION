@@ -37,7 +37,7 @@ def _sensor_save(sensor, data):
                     (datetime.now().isoformat(),sensor,json.dumps(data,ensure_ascii=False)))
         con.execute("DELETE FROM readings WHERE ts < datetime('now','-3 days')")
         con.commit(); con.close()
-        SENSOR_STATE["last"][sensor]={"ts":datetime.now().isoformat(),**data} if isinstance(data,dict) else {"ts":datetime.now().isoformat(),"raw":str(data)}
+        SENSOR_STATE["last"][sensor] = {"ts":datetime.now().isoformat(),**data} if isinstance(data,dict) else {"ts":datetime.now().isoformat(),"raw":str(data)}
     except: pass
 
 def _termux(cmd, timeout=10):
@@ -123,15 +123,6 @@ def _s_audio():
 def _s_nfc():
     nfc=_sh("dumpsys nfc 2>/dev/null|grep -i 'enabled|state'|head -3")
     if nfc: _sensor_save("nfc",{"raw":nfc})
-
-SENSOR_SAMPLERS = {
-    "battery":_s_battery,"wifi":_s_wifi,"system":_s_system,
-    "sensors":_s_sensors,"location":_s_location,"cellinfo":_s_cellinfo,
-    "telephony":_s_telephony,"volume":_s_volume,"brightness":_s_brightness,
-    "clipboard":_s_clipboard,"camera_info":_s_camera_info,
-    "audio":_s_audio,"nfc":_s_nfc,
-}
-
 
 SENSOR_SAMPLERS = {
     "battery":_s_battery,"wifi":_s_wifi,"system":_s_system,

@@ -27,3 +27,8 @@ __pycache__/
 data/
 .env
 .DS_Store
+aiion/config.py
+aiion/mcp/
+aiion/subagentes/blist_bridge.py
+plans/blistv12.md
+tests/mcp_integration_test.py
