@@ -1,0 +1,11 @@
+import os
+
+# Configuración de AIION
+# Copia este archivo a 'config.py' y ajusta tus valores
+
+BLIST_MCP_URL = os.getenv('BLIST_MCP_URL', 'http://127.0.0.1:7337/mcp')
+BLIST_API_KEY = os.getenv('BLIST_API_KEY', 'tu_api_key_aqui')
+
+# Configuración de subagentes
+ENABLE_CLAUDE = False
+LOG_LEVEL = 'INFO'
