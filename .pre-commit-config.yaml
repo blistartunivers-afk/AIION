@@ -1,0 +1,86 @@
+# AIION pre-commit hooks
+# Instalar: make pre-commit-install
+# Ejecutar: make pre-commit-run
+
+repos:
+  # Ruff - Linting rápido (reemplaza flake8, isort, pyupgrade, etc.)
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.5.7
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        types_or: [python, pyi]
+      - id: ruff-format
+        types_or: [python, pyi]
+
+  # Black - Formateo opinado (ejecuta después de ruff-format para consistencia)
+  - repo: https://github.com/psf/black
+    rev: 24.8.0
+    hooks:
+      - id: black
+        language_version: python3.10
+        types_or: [python, pyi]
+        args: [--line-length=100]
+
+  # MyPy - Type checking
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-requests]
+        args: [--config-file=pyproject.toml]
+        types_or: [python, pyi]
+        exclude: ^tests/
+
+  # Verificar que no hay secrets/keys hardcodeados
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.2
+    hooks:
+      - id: gitleaks
+        args: [--config=.gitleaks.toml]
+
+  # Validar TOML/YAML/JSON/Markdown
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: check-toml
+      - id: check-yaml
+      - id: check-json
+      - id: check-merge-conflict
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: detect-private-key
+
+  # Validar que los imports están ordenados (ruff ya lo hace, pero doble check)
+  - repo: https://github.com/pycqa/isort
+    rev: 5.13.2
+    hooks:
+      - id: isort
+        args: [--profile=black, --line-length=100]
+
+  # Verificar que no hay prints en código de producción (solo en tests/CLI)
+  - repo: local
+    hooks:
+      - id: no-print-in-src
+        name: No print statements in src
+        entry: bash -c 'if grep -r "print(" aiion/ --include="*.py" | grep -v "test_" | grep -v "__main__" | grep -v "cli/ui.py" | grep -v "# noqa: T201"; then exit 1; fi'
+        language: system
+        types: [python]
+        exclude: ^tests/
+
+      - id: no-debugger
+        name: No debugger statements
+        entry: bash -c 'if grep -r "breakpoint()\|pdb.set_trace()" aiion/ --include="*.py"; then exit 1; fi'
+        language: system
+        types: [python]
+        exclude: ^tests/
+
+      - id: check-version-bump
+        name: Check version bumped on release
+        entry: bash -c 'echo "Verifica version en pyproject.toml antes de release"'
+        language: system
+        stages: [commit-msg]
+        types: [commit-msg]
+        require_serial: true

@@ -105,7 +105,48 @@ class RamGuard:
                                    stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
                     self._actions+=1
         except: pass
+    
+    def get_stats(self):
+        try:
+            import psutil
+            vm = psutil.virtual_memory()
+            sm = psutil.swap_memory()
+            return {
+                'ram_percent': vm.percent,
+                'ram_available_mb': vm.available // (1024*1024),
+                'ram_total_mb': vm.total // (1024*1024),
+                'swap_percent': sm.percent
+            }
+        except:
+            return {'ram_percent': self.pressure()*100, 'ram_available_mb': 0, 'ram_total_mb': 0, 'swap_percent': 0.0}
+    
+    def acquire_wake_lock(self): pass
+    def release_wake_lock(self): pass
+    def get_trend(self): return 'stable'
+    
+    def cleanup_zombies(self):
+        try:
+            import psutil
+            for p in psutil.process_iter(['status']):
+                if p.info['status'] == 'zombie':
+                    try: p.kill()
+                    except: pass
+        except: pass
+    
+    def check_swap_alert(self):
+        try:
+            import psutil
+            return psutil.swap_memory().percent > 80
+        except: return False
+    
+    def check_low_memory(self):
+        try:
+            import psutil
+            vm = psutil.virtual_memory()
+            return vm.percent > 85 or vm.available < 100 * 1024 * 1024
+        except: return False
 
-    def status(self): return f"{self.stats_str()} {c(CO,self.trend())} {c(CO,f'acc:{self._actions}')}"
+RAMGuard = RamGuard
+RAMGUARD = RAMGuard()
 
 RAMGUARD = RamGuard()

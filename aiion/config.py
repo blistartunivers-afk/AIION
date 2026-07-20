@@ -2,7 +2,7 @@
 from pathlib import Path
 import os
 
-VERSION = "0.1"
+VERSION = "0.2"
 
 # ── Rutas de datos (separadas de cualquier otro agente) ──────────────────
 AIION_HOME = Path.home() / "AIION" / "data"
