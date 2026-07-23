@@ -31,7 +31,10 @@ Construir un **agente autónomo residente en Android/Termux** capaz de percibir 
 - ✅ F2.2 Backend base (núcleo event-driven, tool-calling nativo/ReAct, MCP client, daemon sensores, memoria L2/L3, voz TTS) — **COMPLETADO**
 - ✅ F2.3 Modelo de datos + migraciones (SQLite schema versionado, migraciones automáticas) — **COMPLETADO** (36/36 tests OK; aiion/db.py con schema_version + backfill)
 - ✅ F2.4 Lógica de negocio principal (orquestador con capability-check, audit log, dispatch seguro) — **COMPLETADO** (25/25 tests OK; aiion/orchestrator.py con registry + plan execution + audit; aiion/orchestrator_cli.py con 5 comandos)
-- ⏳ F2.5 APIs REST/GraphQL documentadas (exposición controlada para frontends externos)
+- ✅ F2.5 APIs REST documentadas (aiohttp con auth bearer, rate-limit, WS bus, 8 endpoints) — **COMPLETADO** (23 tests OK; aiion/api.py + aiion/api_server.py)
+- ✅ F2.6 Framework de sub-agentes (registry, 3 subagentes: sara, security_audit, memory_keeper + CLI) — **COMPLETADO** (14 tests OK; aiion/subagentes/ + orchestrator_bridge)
+- ⏳ F2.7 Integración end-to-end (subagentes ↔ orchestrator ↔ API ↔ CLI)
+- ⏳ F2.8 Hardening de seguridad (token rotation, fail-closed, secret scrubbing)
 
 ### ⏳ F3. VERIFICAR — Testing y Calidad
 - ⏳ F3.1 Tests unitarios (cobertura ≥ 80%)

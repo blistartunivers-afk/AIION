@@ -87,7 +87,7 @@ def tool_web_fetch(url, max_chars=4000):
         content=re.sub(r'<script[^>]*>.*?</script>','',content,flags=re.DOTALL)
         content=re.sub(r'<[^>]+>','',content)
         content=re.sub(r'\n{3,}','\n\n',content).strip()
-        return content[:max_chars]+("\n...[truncado]" if len(content)>max_chars else "")
+        return content[:max_chars] + ("... [truncado]" if len(content) > max_chars else "")
     except Exception as ex: return f"Error: {ex}"
 
 def tool_diff_files(path_a, path_b="", context_lines=3):

@@ -54,6 +54,7 @@ class Task:
     def to_dict(self) -> dict:
         d = asdict(self)
         d["status"] = self.status.value
+        d["duration_ms"] = self.duration_ms
         return d
 
     @property
