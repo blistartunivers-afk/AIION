@@ -29,7 +29,7 @@ Construir un **agente autónomo residente en Android/Termux** capaz de percibir 
 ### ⏳ F2. HACER — Implementación Core
 - ✅ F2.1 Setup del proyecto (estructura, dependencias, versionado) — **COMPLETADO**
 - ✅ F2.2 Backend base (núcleo event-driven, tool-calling nativo/ReAct, MCP client, daemon sensores, memoria L2/L3, voz TTS) — **COMPLETADO**
-- 🔄 F2.3 Modelo de datos + migraciones (SQLite schema versionado, migraciones automáticas) — **EN PROGRESO**
+- ✅ F2.3 Modelo de datos + migraciones (SQLite schema versionado, migraciones automáticas) — **COMPLETADO** (36/36 tests OK; aiion/db.py con schema_version + backfill)
 - ⏳ F2.4 Lógica de negocio principal (sub-agentes, planificación, ejecución autónoma)
 - ⏳ F2.5 APIs REST/GraphQL documentadas (exposición controlada para frontends externos)
 
