@@ -1,7 +1,8 @@
 """aiion/sensors/collectors.py — Recolectores individuales vía termux-api + almacenamiento SQLite."""
-import json, subprocess, sqlite3, threading
+import json, subprocess, threading
 from datetime import datetime
 from aiion.config import SENSOR_DB
+from aiion.db import init_db, execute, query
 
 SENSOR_STATE = {"running": False, "last": {}, "thread": None}
 SENSOR_STOP  = threading.Event()
@@ -14,31 +15,29 @@ SENSOR_INTERVALS = {
 }
 
 def _sensor_db():
-    con=sqlite3.connect(str(SENSOR_DB))
-    con.execute("PRAGMA journal_mode=WAL")
-    con.execute("PRAGMA synchronous=NORMAL")
-    con.executescript("""
-        CREATE TABLE IF NOT EXISTS readings(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ts TEXT NOT NULL, sensor TEXT NOT NULL, data TEXT NOT NULL);
-        CREATE TABLE IF NOT EXISTS sensor_alerts(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            ts TEXT NOT NULL, level TEXT NOT NULL,
-            sensor TEXT NOT NULL, message TEXT NOT NULL);
-        CREATE INDEX IF NOT EXISTS idx_st ON readings(sensor,ts);
-    """)
-    con.commit()
-    return con
+    """Compatibilidad legacy: devuelve una conexión con schema inicializado."""
+    return init_db(SENSOR_DB)
 
 def _sensor_save(sensor, data):
     try:
-        con=_sensor_db()
-        con.execute("INSERT INTO readings(ts,sensor,data) VALUES(?,?,?)",
-                    (datetime.now().isoformat(),sensor,json.dumps(data,ensure_ascii=False)))
-        con.execute("DELETE FROM readings WHERE ts < datetime('now','-3 days')")
-        con.commit(); con.close()
-        SENSOR_STATE["last"][sensor] = {"ts":datetime.now().isoformat(),**data} if isinstance(data,dict) else {"ts":datetime.now().isoformat(),"raw":str(data)}
-    except: pass
+        now_iso = datetime.now().isoformat()
+        execute(
+            "INSERT INTO readings(ts,sensor,data) VALUES(?,?,?)",
+            (now_iso, sensor, json.dumps(data, ensure_ascii=False)),
+            SENSOR_DB,
+        )
+        # Retención 3 días (idempotente)
+        execute(
+            "DELETE FROM readings WHERE ts < datetime('now','-3 days')",
+            (),
+            SENSOR_DB,
+        )
+        if isinstance(data, dict):
+            SENSOR_STATE["last"][sensor] = {"ts": now_iso, **data}
+        else:
+            SENSOR_STATE["last"][sensor] = {"ts": now_iso, "raw": str(data)}
+    except Exception:
+        pass
 
 def _termux(cmd, timeout=10):
     try:
