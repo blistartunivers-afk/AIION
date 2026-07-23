@@ -1,0 +1,12 @@
+LICENSE
+README.md
+pyproject.toml
+aiion/__init__.py
+aiion/config.py
+aiion/core.py
+aiion.egg-info/PKG-INFO
+aiion.egg-info/SOURCES.txt
+aiion.egg-info/dependency_links.txt
+aiion.egg-info/requires.txt
+aiion.egg-info/top_level.txt
+tests/test_memory.py

@@ -1,0 +1,10 @@
+requests
+pytest
+pytest-mock
+
+[dev]
+pytest
+pytest-mock
+ruff
+mypy
+pre-commit

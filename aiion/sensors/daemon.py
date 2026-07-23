@@ -2,14 +2,15 @@
 import json, time, threading
 from aiion.sensors.collectors import (
     SENSOR_STATE, SENSOR_STOP, SENSOR_INTERVALS, SENSOR_SAMPLERS,
-    _sensor_db, _sensor_save,
+    _sensor_db,
 )
+from aiion.db import query
 
 def _sensor_loop():
     last={k:0 for k in SENSOR_INTERVALS}
     SENSOR_STATE["running"]=True
-    # Init DB
-    try: con=_sensor_db(); con.close()
+    # Init DB (idempotente + corre migraciones)
+    try: _sensor_db()
     except: pass
     while not SENSOR_STOP.is_set():
         now=time.time()
@@ -37,11 +38,10 @@ def sensor_last(sensor):
 
 def sensor_query(sensor, minutes=60, limit=50):
     try:
-        con=_sensor_db()
-        rows=con.execute(
+        rows=query(
             "SELECT ts,data FROM readings WHERE sensor=? AND ts>=datetime('now',? ||' minutes') ORDER BY ts DESC LIMIT ?",
-            (sensor,f"-{minutes}",limit)).fetchall()
-        con.close()
-        return [{"ts":r[0],**json.loads(r[1])} for r in rows]
+            (sensor, f"-{minutes}", limit),
+        )
+        return [{"ts":r["ts"],**json.loads(r["data"])} for r in rows]
     except: return []
 

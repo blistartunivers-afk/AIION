@@ -3,6 +3,7 @@ import json, os, re, subprocess, sys, shutil, urllib.request
 from pathlib import Path
 from datetime import datetime
 
+import pytest
 from aiion.config import AIION_HOME, MAX_ITER, VERSION, OLLAMA_LOCAL, OLLAMA_CLOUD, PREFERRED_MODELS
 from aiion.cli.ui import (
     c, hr, badge, BANNER, R, BOLD, DIM, ITALIC,
@@ -311,10 +312,489 @@ def _setup_cloud():
             if 0<=idx<len(models): STATE["model"]=models[idx]; return
         except (ValueError,KeyboardInterrupt,EOFError): sys.exit(0)
 
+def print_skills():
+    """Lista todas las skills/tools con descripciones y categorías"""
+    skills_cats = {
+        "📁 Filesystem (7)": [
+            ("read_file", "Lee archivo con líneas numeradas"),
+            ("write_file", "Escribe/crea archivo (con backup .bak)"),
+            ("replace", "Reemplazo quirúrgico en archivo"),
+            ("run_shell_command", "Ejecuta bash en Termux"),
+            ("list_directory", "Lista archivos con tamaños"),
+            ("glob", "Busca por patrón glob"),
+            ("grep_search", "Busca regex en archivos"),
+        ],
+        "🌐 Web (1)": [
+            ("web_fetch", "Descarga texto de URL"),
+        ],
+        "🧠 Memoria (2)": [
+            ("diff_files", "Diferencias entre archivos"),
+            ("memory_search", "Busca en historial de conversaciones"),
+        ],
+        "⚙️ Procesos (1)": [
+            ("process_manager", "Lista/busca/mata procesos"),
+        ],
+        "📱 Android (5)": [
+            ("get_android_status", "Estado completo del dispositivo"),
+            ("sensor_query", "Historial de sensores termux-api"),
+            ("take_photo", "Captura foto con cámara"),
+            ("listar_camaras", "Lista cámaras disponibles"),
+            ("get_gps", "Ubicación GPS actual"),
+        ],
+        "🔔 Notif (2)": [
+            ("notificacion", "Envía notificación Android"),
+            ("cancelar_notificacion", "Cancela notificación por ID"),
+        ],
+        "📞 Comunicación (5)": [
+            ("leer_sms", "Lee mensajes SMS"),
+            ("enviar_sms", "Envía SMS a número"),
+            ("historial_llamadas", "Historial de llamadas"),
+            ("hacer_llamada", "Realiza llamada telefónica"),
+            ("info_telefonia", "Info del dispositivo"),
+        ],
+        "🔊 Voz (2)": [
+            ("hablar", "Síntesis TTS Groq PlayAI"),
+            ("listar_voces", "Lista voces TTS disponibles"),
+        ],
+        "⏰ Tareas (3)": [
+            ("crear_tarea", "Programa tarea cron/at"),
+            ("listar_tareas", "Lista tareas programadas"),
+            ("eliminar_tarea", "Elimina tarea por ID"),
+        ],
+    }
+    
+    total = sum(len(v) for v in skills_cats.values())
+    print(f"\n{c(CY+BOLD,f'╔══ 🎯 SKILLS DE AIION — {total} herramientas ═════════════════╗')}")
+    
+    for cat, tools in skills_cats.items():
+        print(f"{c(PU,'║')} {c(YL+BOLD,cat)}")
+        for name, desc in tools:
+            danger = c(RE, " 🔒") if name in DANGEROUS_TOOLS else ""
+            print(f"{c(PU,'║')}   {c(GR,'▸')} {c(CY,name):<22}{danger}  {c(CO,'—')} {c(D_FG,desc)}")
+    
+    print(f"{c(PU,'║')}")
+    print(f"{c(PU,'║')} {c(CO,'Leyenda:')} {c(RE,'🔒')} = requiere permiso (cambia archivos/sistema)")
+    print(f"{c(PU,'╚'+'═'*58)}\n")
+
+
+def do_backup(action="create"):
+    """Sistema de respaldos: crear, listar o restaurar backups"""
+    # AIION_HOME apunta a ~/AIION/data, así que la raíz real es su padre
+    AIION_ROOT = AIION_HOME.parent
+    backup_root = AIION_HOME / "backups"
+    backup_root.mkdir(exist_ok=True)
+    
+    if action == "list":
+        print(f"\n{c(CY+BOLD,'╔══ 💾 BACKUPS DISPONIBLES ═══════════════════════╗')}")
+        backups = sorted([d for d in backup_root.iterdir() if d.is_dir()], reverse=True)
+        if not backups:
+            print(f"{c(PU,'║')} {c(CO,'(no hay backups aún)')}")
+        else:
+            for b in backups[:10]:
+                size = sum(f.stat().st_size for f in b.rglob('*') if f.is_file())
+                size_mb = size / 1024
+                files = sum(1 for _ in b.rglob('*') if _.is_file())
+                print(f"{c(PU,'║')} {c(GR,'▸')} {c(CY,b.name)} {c(CO,'—')} {files} archivos, {size_mb:.1f} KB")
+        print(f"{c(PU,'╚'+'═'*50)}\n")
+        return
+    
+    if action == "restore":
+        backups = sorted([d for d in backup_root.iterdir() if d.is_dir()], reverse=True)
+        if not backups:
+            print(c(YL, "\n  ⚠ No hay backups para restaurar.\n"))
+            return
+        latest = backups[0]
+        print(c(CY+BOLD, f"\n  🔄 Restaurando desde: {latest.name}\n"))
+        src = latest / "aiion" / "core.py"
+        if src.exists():
+            dest = AIION_ROOT / "aiion" / "core.py"
+            dest.write_text(src.read_text())
+            print(c(GR, f"  ✓ core.py restaurado"))
+        src_data = latest / "data"
+        if src_data.exists():
+            import shutil
+            dest_data = AIION_HOME
+            if dest_data.exists():
+                shutil.rmtree(dest_data)
+            shutil.copytree(src_data, dest_data)
+            print(c(GR, f"  ✓ data/ restaurado"))
+        print(c(GR+BOLD, f"\n  ✅ Restauración completa.\n"))
+        return
+    
+    if action == "clean":
+        backups = sorted([d for d in backup_root.iterdir() if d.is_dir()], reverse=True)
+        keep = backups[:5]
+        remove = backups[5:]
+        for b in remove:
+            import shutil
+            shutil.rmtree(b)
+        print(c(GR, f"\n  🧹 {len(remove)} backups antiguos eliminados, {len(keep)} conservados.\n"))
+        return
+    
+    # ── CREATE (default) ───────────────────────────────────────────
+    ts = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    dest = backup_root / ts
+    dest.mkdir()
+    
+    print(f"\n{c(CY+BOLD,'╔══ 💾 CREANDO BACKUP ═══════════════════════════╗')}")
+    
+    # Backup de core.py (usando AIION_ROOT.parent)
+    core_src = AIION_ROOT / "aiion" / "core.py"
+    if core_src.exists():
+        core_dest = dest / "aiion" / "core.py"
+        core_dest.parent.mkdir(parents=True, exist_ok=True)
+        core_dest.write_text(core_src.read_text())
+        size_kb = core_src.stat().st_size / 1024
+        print(f"{c(PU,'║')} {c(GR,'✓')} core.py ({size_kb:.1f} KB)")
+    
+    # Backup de data/ (que SÍ es AIION_HOME)
+    data_src = AIION_HOME
+    if data_src.exists():
+        import shutil
+        data_dest = dest / "data"
+        shutil.copytree(data_src, data_dest, ignore=shutil.ignore_patterns('backups'))
+        files = sum(1 for _ in data_dest.rglob('*') if _.is_file())
+        print(f"{c(PU,'║')} {c(GR,'✓')} data/ ({files} archivos)")
+    
+    # Backup de aiion_keys.py (raíz del proyecto)
+    keys_src = AIION_ROOT / "aiion_keys.py"
+    if keys_src.exists():
+        keys_dest = dest / "aiion_keys.py"
+        keys_dest.write_text(keys_src.read_text())
+        print(f"{c(PU,'║')} {c(GR,'✓')} aiion_keys.py")
+    
+    total_size = sum(f.stat().st_size for f in dest.rglob('*') if f.is_file())
+    print(f"{c(PU,'║')}")
+    print(f"{c(PU,'║')} {c(CO,'ID:')} {c(CY,ts)}")
+    print(f"{c(PU,'║')} {c(CO,'Total:')} {total_size/1024:.1f} KB")
+    print(f"{c(PU,'║')} {c(CO,'Ubicación:')} {c(D_FG,str(dest))}")
+    print(f"{c(PU,'╚'+'═'*50)}\n")
+    print(c(GR, f"  ✅ Backup creado. Usa /backup list|restore|clean\n"))
+
+
+def system_doctor():
+    """Diagnóstico completo del sistema con puntuación de salud"""
+    print(f"\n{c(CY+BOLD,'╔══ 🩺 AIION DOCTOR — Diagnóstico del Sistema ═══════╗')}")
+    
+    checks = []  # (nombre, ok, detalle)
+    
+    # 1. RAM
+    try:
+        m = RAMGUARD._meminfo()
+        pct = RAMGUARD.pressure() * 100
+        ok = pct < 85
+        checks.append(("RAM disponible", ok, f"{pct:.0f}% usado ({m.get('MemAvailable',0)//1024}MB libres)"))
+    except Exception as ex:
+        checks.append(("RAM", False, str(ex)[:40]))
+    
+    # 2. Modelo configurado
+    model_ok = bool(STATE.get("model"))
+    checks.append(("Modelo LLM", model_ok, STATE.get("model") or "no configurado"))
+    
+    # 3. API keys
+    if STATE.get("use_cloud"):
+        n_keys = len(STATE.get("api_keys", []))
+        ok = n_keys >= 1
+        checks.append(("API Keys (nube)", ok, f"{n_keys} keys en pool"))
+    else:
+        checks.append(("Modo local", True, "sin keys necesarias"))
+    
+    # 4. Sensores
+    sens_ok = SENSOR_STATE.get("running", False)
+    checks.append(("Sensores activos", sens_ok, 
+                   f"{len(SENSOR_INTERVALS)} registrados" if sens_ok else "no iniciados"))
+    
+    # 5. Tests
+    try:
+        import subprocess
+        r = subprocess.run(["python3", "-m", "pytest", "tests/", "-q", "--no-header"],
+                          capture_output=True, text=True, timeout=30, cwd=str(AIION_HOME))
+        passed = "passed" in r.stdout
+        # Extraer número de tests pasados
+        import re
+        m = re.search(r'(\d+)\s+passed', r.stdout)
+        n_passed = m.group(1) if m else "?"
+        checks.append(("Tests unitarios", passed, f"{n_passed} tests OK" if passed else "fallaron"))
+    except Exception as ex:
+        checks.append(("Tests unitarios", False, f"error: {str(ex)[:30]}"))
+    
+    # 6. Backups de core.py
+    backup_path = Path(str(AIION_HOME)) / "aiion" / "core.py.bak"
+    checks.append(("Backup core.py", backup_path.exists(), 
+                   str(backup_path.name) if backup_path.exists() else "no existe"))
+    
+    # 7. Memoria persistente
+    mem_ok = MEMORY_FILE.exists()
+    mem_size = len(MEMORY_FILE.read_text()) if mem_ok else 0
+    checks.append(("Memoria persistente", mem_ok, f"{mem_size} chars"))
+    
+    # 8. Voz (TTS)
+    checks.append(("Sistema de voz", True, f"{len(VOICES) if VOICES else 0} voces disponibles"))
+    
+    # 9. Disk space (AIION home)
+    try:
+        import shutil
+        usage = shutil.disk_usage(str(AIION_HOME))
+        free_gb = usage.free / (1024**3)
+        ok = free_gb > 0.5
+        checks.append(("Disco libre", ok, f"{free_gb:.1f} GB disponibles"))
+    except Exception as ex:
+        checks.append(("Disco", False, str(ex)[:30]))
+    
+    # 10. CWD escribible
+    try:
+        test_file = Path("aiion_doctor_test.tmp")
+        test_file.write_text("test")
+        test_file.unlink()
+        checks.append(("CWD escribible", True, os.getcwd()))
+    except Exception as ex:
+        checks.append(("CWD escribible", False, str(ex)[:30]))
+    
+    # ── Renderizar resultados ────────────────────────────────────────────
+    passed = sum(1 for _, ok, _ in checks if ok)
+    total = len(checks)
+    score = int((passed / total) * 100) if total else 0
+    
+    if score >= 90:   score_col, status = GR, "EXCELENTE"
+    elif score >= 70: score_col, status = YL, "BUENO"
+    elif score >= 50: score_col, status = OR, "REGULAR"
+    else:             score_col, status = RE, "CRÍTICO"
+    
+    print(f"{c(PU,'║')} {c(BOLD,'Chequeos realizados:')} {total}")
+    print(f"{c(PU,'║')} {c(BOLD,'Pasados:')} {c(GR,str(passed))} {c(BOLD,'| Fallos:')} {c(RE,str(total-passed))}")
+    print(f"{c(PU,'║')} {c(BOLD,'Salud del sistema:')} {c(score_col+BOLD,f'{score}/100')} ({c(score_col+BOLD,status)})")
+    print(f"{c(PU,'║')}")
+    
+    for nombre, ok, detalle in checks:
+        icon = c(GR, '✓') if ok else c(RE, '✗')
+        nombre_col = c(GR if ok else RE, nombre)
+        print(f"{c(PU,'║')}  {icon} {nombre_col:<22} {c(CO,'—')} {c(D_FG,detalle)}")
+    
+    # Sugerencias
+    fallos = [(n, d) for n, ok, d in checks if not ok]
+    if fallos:
+        print(f"{c(PU,'║')}")
+        print(f"{c(PU,'║')} {c(YL+BOLD,'💡 Sugerencias:')}")
+        for nombre, detalle in fallos:
+            if nombre == "RAM disponible":
+                print(f"{c(PU,'║')}   {c(CO,'▸')} Cierra apps o ejecuta /clear")
+            elif nombre == "Sensores activos":
+                print(f"{c(PU,'║')}   {c(CO,'▸')} Reinicia AIION para activar sensores")
+            elif nombre == "Modelo LLM":
+                print(f"{c(PU,'║')}   {c(CO,'▸')} Usa /model para configurar uno")
+            elif nombre == "API Keys (nube)":
+                print(f"{c(PU,'║')}   {c(CO,'▸')} Configura OLLAMA_API_KEY o usa /model")
+            elif nombre == "Backup core.py":
+                print(f"{c(PU,'║')}   {c(CO,'▸')} Crea un backup: cp aiion/core.py aiion/core.py.bak")
+            elif nombre == "Disco libre":
+                print(f"{c(PU,'║')}   {c(CO,'▸')} Libera espacio: rm -rf ~/AIION/data/cache/*")
+            else:
+                print(f"{c(PU,'║')}   {c(CO,'▸')} Revisar: {nombre}")
+    else:
+        print(f"{c(PU,'║')}")
+        print(f"{c(PU,'║')} {c(GR+BOLD,'✅ Todo en orden. AIION funcionando óptimamente.')}")
+    
+    print(f"{c(PU,'╚'+'═'*58)}\n")
+
+
+def create_plan(name="nuevo_plan"):
+    """Crea o lista planes de proyecto por fases (PHVA+Teoría de Colas)
+    Uso: /plan <nombre>   crea plan nuevo
+          /plan list      lista planes guardados
+          /plan show <n>  muestra un plan
+          /plan check <n> <fase_id>  marca fase (done/partial/pending)
+    """
+    from pathlib import Path
+    plans_dir = Path("~/AIION/plans").expanduser()
+    plans_dir.mkdir(parents=True, exist_ok=True)
+    
+    args = name.strip()
+    cmd_parts = args.split()
+    subcmd = cmd_parts[0].lower() if cmd_parts else ""
+    
+    # /plan list
+    if subcmd == "list":
+        files = sorted(plans_dir.glob("*.md"))
+        print(f"\n{c(CY+BOLD,'╔══ 📋 Planes de Proyecto ═══════════════════╗')}")
+        if not files:
+            print(f"{c(PU,'║')} {c(YL,'(ninguno aún — usa: /plan <nombre>)')}")
+        else:
+            for i, f in enumerate(files, 1):
+                # contar fases
+                content = f.read_text()
+                n_done = content.count("✅")
+                n_partial = content.count("🔄")
+                n_pending = content.count("⏳")
+                print(f"{c(PU,'║')} {c(GR,str(i))}. {c(CY,f.stem)}")
+                print(f"{c(PU,'║')}    ✅{n_done}  🔄{n_partial}  ⏳{n_pending}")
+        print(f"{c(PU,'╚'+'═'*44)}\n")
+        return
+    
+    # /plan show <nombre>
+    if subcmd == "show" and len(cmd_parts) > 1:
+        plan_name = "_".join(cmd_parts[1:])
+        path = plans_dir / f"{plan_name}.md"
+        if path.exists():
+            print(f"\n{c(CY+BOLD,f'📄 {path.name}')}")
+            print(c(D_FG, path.read_text()))
+        else:
+            print(c(RE, f"  ✗ Plan no encontrado: {plan_name}"))
+        return
+    
+    # /plan check <nombre> <fase> <estado>
+    if subcmd == "check" and len(cmd_parts) >= 4:
+        plan_name = cmd_parts[1]
+        fase_id = cmd_parts[2]
+        estado = cmd_parts[3].lower()
+        path = plans_dir / f"{plan_name}.md"
+        if not path.exists():
+            print(c(RE, f"  ✗ Plan no encontrado: {plan_name}"))
+            return
+        content = path.read_text()
+        if estado == "done":
+            content = content.replace(f"⏳ {fase_id}", f"✅ {fase_id}")
+            content = content.replace(f"🔄 {fase_id}", f"✅ {fase_id}")
+        elif estado == "partial":
+            content = content.replace(f"⏳ {fase_id}", f"🔄 {fase_id}")
+        elif estado == "pending":
+            content = content.replace(f"✅ {fase_id}", f"⏳ {fase_id}")
+            content = content.replace(f"🔄 {fase_id}", f"⏳ {fase_id}")
+        path.write_text(content)
+        print(c(GR, f"  ✓ Fase {fase_id} → {estado}"))
+        return
+    
+    # /plan <nombre>  → crear plan nuevo con plantilla PHVA
+    plan_name = args.strip() or "nuevo_plan"
+    plan_name = plan_name.replace(" ", "_")
+    path = plans_dir / f"{plan_name}.md"
+    
+    if path.exists():
+        print(c(YL, f"  ⚠ Ya existe: {plan_name}. Usa /plan show {plan_name} para verlo."))
+        return
+    
+    plantilla = f"""# 📋 Plan: {plan_name.replace('_', ' ').title()}
+
+**Creado:** {datetime.now().strftime('%Y-%m-%d')}
+**Estado:** 🆕 Nuevo
+
+---
+
+## 🎯 Objetivo General
+(Describe el objetivo principal del proyecto)
+
+## 🏗️ Arquitectura Técnica
+- **Backend:** (stack a usar)
+- **Frontend:** (stack a usar)
+- **BD:** (motor de datos)
+- **Seguridad:** (protocolos)
+- **Despliegue:** (cómo se entrega)
+
+---
+
+## 📊 Fases (PHVA — Planear, Hacer, Verificar, Actuar)
+
+### ⏳ F1. PLANEAR — Análisis y Diseño
+- ⏳ F1.1 Levantar requerimientos funcionales/no funcionales
+- ⏳ F1.2 Diseñar arquitectura técnica
+- ⏳ F1.3 Definir APIs/endpoints y modelo de datos
+- ⏳ F1.4 Plan de seguridad (autenticación, autorización, encriptación)
+- ⏳ F1.5 Estimar tiempos (Pareto 80/20 — qué da el 80% del valor)
+
+### ⏳ F2. HACER — Implementación Core
+- ⏳ F2.1 Setup del proyecto (estructura, dependencias, versionado)
+- ⏳ F2.2 Backend base (servidor, rutas, middleware)
+- ⏳ F2.3 Modelo de datos + migraciones
+- ⏳ F2.4 Lógica de negocio principal
+- ⏳ F2.5 APIs REST/GraphQL documentadas
+
+### ⏳ F3. VERIFICAR — Testing y Calidad
+- ⏳ F3.1 Tests unitarios (cobertura ≥ 80%)
+- ⏳ F3.2 Tests de integración
+- ⏳ F3.3 Tests de seguridad (OWASP Top 10)
+- ⏳ F3.4 Tests de carga (teoría de colas: λ=tasas, μ=servicio)
+- ⏳ F3.5 Pruebas E2E
+
+### ⏳ F4. ACTUAR — Despliegue y Mejora Continua
+- ⏳ F4.1 Pipeline CI/CD
+- ⏳ F4.2 Despliegue a producción (con rollback)
+- ⏳ F4.3 Monitoreo y alertas (KPIs)
+- ⏳ F4.4 Documentación final (usuario + técnico)
+- ⏳ F4.5 Retrospectiva (Kaizen) — qué mejorar
+
+---
+
+## 🔄 Cómo actualizar este plan
+```bash
+/plan check {plan_name} F1.1 done      # marca como completado ✅
+/plan check {plan_name} F1.1 partial   # en progreso 🔄
+/plan check {plan_name} F1.1 pending   # pendiente ⏳
+/plan show {plan_name}                 # ver plan completo
+```
+
+## 📈 Métricas de Éxito
+- ⏳ % completitud del plan
+- ⏳ Cobertura de tests
+- ⏳ Latencia media (ms)
+- ⏳ Uptime (%)
+"""
+    
+    path.write_text(plantilla)
+    print(f"\n{c(GR+BOLD,'✓ Plan creado:')} {c(CY, str(path))}")
+    print(f"{c(D_FG,'  Edita el objetivo y comienza a marcar fases:')}")
+    print(f"{c(D_FG,'  /plan check ' + plan_name + ' F1.1 done')}\n")
+
+
+def print_status():
+    """Resumen ejecutivo del estado de AIION v0.2"""
+    print(f"\n{c(CY+BOLD,'╔══ 🧠 AIION STATUS ════════════════════════════════╗')}")
+    
+    # Modelo
+    modo = c(CY+BOLD, f"NUBE | {STATE['model']} ({len(STATE['api_keys'])} keys)") \
+        if STATE.get("use_cloud") else c(GR+BOLD, f"LOCAL | {STATE.get('model','?')}")
+    print(f"{c(PU,'║')} {c(CO,'Modelo:')}   {modo}  {type_badge(get_model_type(STATE.get('model','')))}")
+    
+    # Tool mode
+    toolmode = c(GR,'nativo ✓') if TOOL_CALL_STATE.get('native') else c(YL,'ReAct (texto)')
+    print(f"{c(PU,'║')} {c(CO,'Tools:')}    {c(PU,str(len(TOOL_MAP)))} disponibles | Modo: {toolmode}")
+    
+    # RAM
+    print(f"{c(PU,'║')} {c(CO,'RAM:')}      {RAMGUARD.stats_str()}")
+    print(f"{c(PU,'║')} {c(CO,'Tendencia:')} {c(YL,RAMGUARD.trend())}")
+    
+    # Sensores
+    sens_icon = c(GR,'● activos') if SENSOR_STATE.get('running') else c(CO,'○ inactivos')
+    print(f"{c(PU,'║')} {c(CO,'Sensores:')} {sens_icon} ({len(SENSOR_INTERVALS)} registrados)")
+    
+    # Voz
+    voz = c(PK,'🔊 ON') if VOICE_STATE.get('enabled') else c(CO,'🔇 OFF')
+    voz_name = VOICE_STATE.get('voice','').split('-')[0] if VOICE_STATE.get('voice') else 'default'
+    print(f"{c(PU,'║')} {c(CO,'Voz:')}      {voz} ({voz_name})")
+    
+    # Memoria
+    try:
+        mem_size = len(MEMORY_FILE.read_text()) if MEMORY_FILE.exists() else 0
+        hist_count = len(history_load_all())
+        cog_count = len(COGINDEX.data) if hasattr(COGINDEX,'data') else 0
+        print(f"{c(PU,'║')} {c(CO,'Memoria:')}   {mem_size} chars | Historial: {hist_count} | CogIndex: {cog_count}")
+    except Exception:
+        print(f"{c(PU,'║')} {c(CO,'Memoria:')}   {c(CO,'(no disponible)')}")
+    
+    # CWD y HOME
+    print(f"{c(PU,'║')} {c(CO,'CWD:')}      {c(D_FG,os.getcwd())}")
+    print(f"{c(PU,'║')} {c(CO,'PID:')}      {c(D_FG,os.getpid())} | {c(CO,'Time:')} {c(D_FG,datetime.now().strftime('%Y-%m-%d %H:%M:%S'))}")
+    
+    print(f"{c(PU,'╚═════════════════════════════════════════════════╝')}\n")
+
 def print_help():
     print(f"""
 {c(PU+BOLD,'╔══ Comandos ═══════════════════════════════════════╗')}
 {c(PU,'║')}  {c(CY,'/exit')}              Salir del agente
+{c(PU,'║')}  {c(CY,'/status')}            Resumen ejecutivo del sistema
+{c(PU,'║')}  {c(CY,'/skills')}            Lista detallada de tools/skills
+{c(PU,'║')}  {c(CY,'/doctor')}            Diagnóstico completo del sistema
+{c(PU,'║')}  {c(CY,'/backup')}            Crea/listar/restaura backups
+{c(PU,'║')}  {c(CY,'/plan <nombre>')}     Crea plan de proyecto por fases
+{c(PU,'║')}  {c(CY,'/mcp <op>')}          MCP: status|ping|tools|call|set|config
 {c(PU,'║')}  {c(CY,'/clear')}             Limpiar historial de sesión
 {c(PU,'║')}  {c(CY,'/model')}             Cambiar modelo
 {c(PU,'║')}  {c(CY,'/tools')}             Ver todas las tools
@@ -330,6 +810,7 @@ def print_help():
 {c(PU,'║')}  {c(CY,'/voice set <voz>')}   Cambiar voz (Celeste/Valentina/Mateo)
 {c(PU,'║')}  {c(CY,'/voice vol <0-100>')} Volumen
 {c(PU,'║')}  {c(CY,'/voice speed <0.5-2>')} Velocidad
+{c(PU,'║')}  {c(CY,'/test')}              Ejecutar tests unitarios
 {c(PU,'╚═══════════════════════════════════════════════════╝')}
 """)
 
@@ -441,6 +922,28 @@ def main():
             RAMGUARD.stop(); sensor_stop(); sys.exit(0)
 
         elif user_input=="/help": print_help()
+        elif user_input=="/status": print_status()
+        elif user_input=="/skills": print_skills()
+        elif user_input=="/doctor": system_doctor()
+        elif user_input=="/backup" or user_input.startswith("/backup "):
+            parts = user_input.split()
+            action = parts[1] if len(parts) > 1 else "create"
+            if action in ("create", "list", "restore", "clean"):
+                do_backup(action)
+            else:
+                print(c(YL, "  Uso: /backup [create|list|restore|clean]"))
+        elif user_input.startswith("/plan"):
+            args = user_input[5:].strip()
+            create_plan(args)
+
+        elif user_input.startswith("/mcp"):
+            # /mcp status | ping | tools [filtro] | call <tool> <json> | set k v | config | refresh | report
+            from aiion.mcp.client import cmd_mcp as _cmd_mcp
+            parts = user_input.split()
+            if len(parts) < 2:
+                print(_cmd_mcp("status", []))
+            else:
+                print(_cmd_mcp(parts[1], parts[2:]))
 
         elif user_input=="/clear":
             history=[]; os.system("clear"); print(BANNER)
@@ -500,6 +1003,11 @@ def main():
             path=user_input[4:].strip()
             try: os.chdir(os.path.expanduser(path)); print(c(GR,f"  ✓ {os.getcwd()}"))
             except Exception as ex: print(c(RE,f"  ✗ {ex}"))
+
+        elif user_input=="/test":
+            print(c(CY,"  Ejecutando tests..."))
+            result = pytest.main(["-v", "tests/"])
+            print(c(GR if result == 0 else RE, f"  Resultado: {'✓ OK' if result == 0 else '✗ FALLÓ'}"))
 
         elif user_input=="/toolmode":
             TOOL_CALL_STATE["native"] = not TOOL_CALL_STATE["native"]

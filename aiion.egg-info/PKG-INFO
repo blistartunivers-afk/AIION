@@ -1,0 +1,17 @@
+Metadata-Version: 2.4
+Name: aiion
+Version: 0.1.0
+Summary: AIION: Ecosistema autónomo de inteligencia
+Author-email: Estiven <estiven@blist.com>
+Requires-Python: >=3.10
+License-File: LICENSE
+Requires-Dist: requests
+Requires-Dist: pytest
+Requires-Dist: pytest-mock
+Provides-Extra: dev
+Requires-Dist: pytest; extra == "dev"
+Requires-Dist: pytest-mock; extra == "dev"
+Requires-Dist: ruff; extra == "dev"
+Requires-Dist: mypy; extra == "dev"
+Requires-Dist: pre-commit; extra == "dev"
+Dynamic: license-file
