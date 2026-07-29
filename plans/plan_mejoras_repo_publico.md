@@ -35,6 +35,11 @@ Realizado en auditoría del 2026-07-28:
 | `Makefile` | ✅ Existe | Comandos estandarizados |
 | `.gitignore` blindado | ✅ Existe | Cubre secretos, datos, BD, envs |
 | `.pre-commit-config.yaml` | ✅ Existe | Hooks de calidad |
+| `.github/CODE_OF_CONDUCT.md` | ✅ Existe | Bilingüe (ES/EN) v2.1 |
+| `.github/SECURITY.md` | ✅ Existe | Política de reporte privado |
+| `.github/ISSUE_TEMPLATE/*.yml` | ✅ Existe | bug_report + feature_request |
+| `.github/PULL_REQUEST_TEMPLATE.md` | ✅ Existe | Checklist completo |
+| `CONTRIBUTORS.md` | ✅ Existe | Con instrucciones de entrada |
 | `aiion/` estructura | ✅ Existe | core, db, memory, llm, tools, etc. |
 | `aiion_keys.py` | ✅ Existe | Pool de keys, sin datos sensibles |
 | `tests/` | ✅ Existe | `test_db.py`, `test_memory.py` (825 líneas) |
@@ -43,20 +48,16 @@ Realizado en auditoría del 2026-07-28:
 | `pyproject.toml` | ✅ Existe | Configuración de paquete |
 | `requirements.txt` | ✅ Existe | Dependencias |
 
-### ❌ Lo que falta
+### ❌ Lo que aún falta
 
 | Categoría | Pendiente |
 |-----------|-----------|
 | **Releases** | Sin tags ni GitHub Releases |
-| **GitHub-native** | Sin carpeta `.github/` (sin templates, sin workflows) |
-| **CI/CD** | Sin Actions automatizados |
+| **CI/CD** | Sin GitHub Actions automatizados |
 | **Páginas web** | Sin GitHub Pages configurado |
-| **Seguridad** | Sin `SECURITY.md` |
-| **Issues templates** | Sin plantillas de bug/feature |
-| **PR templates** | Sin plantilla de pull request |
-| **Community** | Sin `CODE_OF_CONDUCT.md` separado |
-| **Contributors** | Sin `CONTRIBUTORS.md` |
 | **Visual** | Logo/banner generativo |
+| **Documentación avanzada** | CONTRIBUTING-CORE, SECURITY-MODEL, USAGE |
+| **Features nuevas** | Plugins, dashboard, más LLMs |
 
 ---
 
@@ -78,36 +79,38 @@ Realizado en auditoría del 2026-07-28:
 
 ---
 
-### 🔵 FASE 1 — Fundamentos de Comunidad (PRÓXIMA)
-**Duración estimada:** 1 sesión
+### ✅ Fase 1 — Fundamentos de Comunidad (COMPLETADA)
+**Fecha de cierre:** 2026-07-28
+**Duración:** 1 sesión
 **Objetivo:** Establecer el esqueleto de archivos GitHub-native que todo repo open source maduro necesita.
 
-#### Tareas:
-- [ ] Crear `.github/CODE_OF_CONDUCT.md`
+#### Tareas completadas:
+- [x] `.github/CODE_OF_CONDUCT.md` (5862 bytes)
   - Basado en Contributor Covenant v2.1
   - Idioma: Español + Inglés
-- [ ] Crear `.github/SECURITY.md`
+- [x] `.github/SECURITY.md` (3543 bytes)
   - Política de reporte de vulnerabilidades
   - Canal privado: email
-  - Tiempo de respuesta: 48h
-- [ ] Crear `.github/ISSUE_TEMPLATE/bug_report.yml`
-  - Formulario estructurado (no Markdown libre)
-- [ ] Crear `.github/ISSUE_TEMPLATE/feature_request.yml`
-  - Descripción + motivación + alternativa
-- [ ] Crear `.github/PULL_REQUEST_TEMPLATE.md`
-  - Checklist + descripción + screenshots
-- [ ] Crear `CONTRIBUTORS.md`
+  - SLA por severidad (Crítica/Alta/Media/Baja)
+- [x] `.github/ISSUE_TEMPLATE/bug_report.yml` (4175 bytes)
+  - Formulario estructurado con 10 secciones
+- [x] `.github/ISSUE_TEMPLATE/feature_request.yml` (3482 bytes)
+  - Descripción + motivación + alternativa + mockups
+- [x] `.github/PULL_REQUEST_TEMPLATE.md` (3020 bytes)
+  - Checklist completo: código, tests, docs, seguridad, filosofía
+- [x] `CONTRIBUTORS.md` (2289 bytes)
   - (vacío, pero con instrucciones de cómo añadirse)
-- [ ] Commit con `docs: añadir templates de GitHub-native`
-- [ ] Push a `master`
+- [x] Commit `docs(community)` con mensaje detallado
+- [x] Push a `master` (commit 407d310)
+- [x] Verificación con `gh_list_files`
 
-**Criterio de cierre:** Cualquier usuario externo puede abrir un issue o PR siguiendo los guidelines.
+**Criterio de cierre:** ✅ Cualquier usuario externo puede abrir un issue o PR siguiendo los guidelines.
 
 ---
 
-### 🟢 FASE 2 — Primer Release Oficial (v0.2.0)
+### 🔵 FASE 2 — Primer Release Oficial (v0.2.0) (PRÓXIMA)
 **Duración estimada:** 30 min
-**Objetivo:** Materializar el trabajo de Fase 0 y 1 en una release pública de GitHub.
+**Objetivo:** Materializar el trabajo de Fases 0 y 1 en una release pública de GitHub.
 
 #### Tareas:
 - [ ] Crear tag `v0.2.0` local
@@ -229,6 +232,7 @@ Realizado en auditoría del 2026-07-28:
 - ✅ **Completado** — fase cerrada y verificada en GitHub
 - 🟡 **En progreso** — tareas en curso
 - 🔵 **Próximo** — listo para empezar
+- 🟢 **🟣 🟠 🔴 🟤** — fases planificadas en orden
 - ⚪ **Futuro** — depende de feedback
 
 ## 🔄 Cómo Actualizar
