@@ -1,0 +1,150 @@
+name: 🐛 Reporte de Bug
+description: Reporta un comportamiento inesperado o error en AIION
+title: "[BUG] "
+labels: ["bug", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ¡Gracias por reportar un bug! 🐛
+        Por favor completa toda la información posible para que podamos reproducirlo.
+
+  - type: input
+    id: version
+    attributes:
+      label: Versión de AIION
+      description: "¿Qué versión estás usando? (ej: v0.2.0, master commit abc123)"
+      placeholder: "v0.2.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Entorno
+      description: ¿Dónde ejecutas AIION?
+      options:
+        - Termux en Android
+        - Termux en Android (F-Droid)
+        - Termux en Android (Play Store)
+        - Linux nativo
+        - macOS
+        - Windows (WSL)
+        - Otro
+    validations:
+      required: true
+
+  - type: input
+    id: os-version
+    attributes:
+      label: Versión del SO / Android
+      description: "Ej: Android 14 (API 34), Termux 0.118, Python 3.11"
+      placeholder: "Android 14, Termux 0.118"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Descripción del bug
+      description: "Descripción clara y concisa del problema"
+      placeholder: |
+        AIION falla al intentar leer el sensor de batería y devuelve un error 500.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps-to-reproduce
+    attributes:
+      label: Pasos para reproducir
+      description: "Secuencia exacta de comandos/acciones que llevan al bug"
+      placeholder: |
+        1. Iniciar Termux
+        2. Ejecutar `python main.py`
+        3. Comandar `leer_sensor battery`
+        4. Observar el error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Comportamiento esperado
+      description: "Qué esperabas que ocurriera"
+      placeholder: "Esperaba ver el nivel de batería en porcentaje"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Comportamiento actual
+      description: "Qué ocurre realmente (con mensaje de error literal si aplica)"
+      placeholder: |
+        ```
+        Traceback (most recent call last):
+          File "aiion/sensors/battery.py", line 23, in <module>
+        ImportError: ...
+        ```
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs relevantes
+      description: "Salida de logs con contexto. NO incluyas API keys."
+      placeholder: "[Pega aquí los logs]"
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: Severidad
+      description: ¿Qué tan grave es?
+      options:
+        - 🔴 Crítica (impide usar AIION)
+        - 🟠 Alta (feature importante rota)
+        - 🟡 Media (workaround existe)
+        - 🟢 Baja (cosmético o menor)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: permissions
+    attributes:
+      label: Permisos del dispositivo
+      description: ¿Has otorgado los permisos necesarios a Termux?
+      options:
+        - Sí, todos (almacenamiento, cámara, ubicación)
+        - Parcialmente
+        - No, solo los básicos
+        - No sé
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Verificaciones previas
+      description: "Confirma que has hecho estas verificaciones"
+      options:
+        - label: He buscado en issues existentes y no encontré este bug
+          required: true
+        - label: Estoy usando la última versión de AIION
+          required: true
+        - label: He ejecutado `make doctor` y revisé la salida
+          required: true
+        - label: No incluyo API keys ni secretos en este reporte
+          required: true
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Información adicional
+      description: "Cualquier otro contexto relevante (capturas, config, etc.)"
+      placeholder: |
+        - Ocurre solo en WiFi específico
+        - Se reproduce con termux-api actualizado
+        - Empieza a fallar después de X horas de uso

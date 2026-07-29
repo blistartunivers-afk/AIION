@@ -1,0 +1,121 @@
+name: 💡 Solicitud de Feature
+description: Sugiere una nueva funcionalidad o mejora para AIION
+title: "[FEATURE] "
+labels: ["enhancement", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ¿Tienes una idea para mejorar AIION? ¡Cuéntanosla! 💡
+        Antes de enviar, verifica que no exista ya en issues o PRs.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: ¿Qué problema resuelve?
+      description: "Describe el problema o necesidad que motiva esta feature"
+      placeholder: |
+        Como usuario de AIION en mi Android, me gustaría poder visualizar
+        el historial de sensores en un gráfico desde el terminal.
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Solución propuesta
+      description: "¿Cómo imaginas que se implemente?"
+      placeholder: |
+        Añadir un subcomando `sensor_chart <nombre>` que renderice un
+        gráfico ASCII de las últimas N lecturas.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternativas consideradas
+      description: "Otras formas de resolver el problema"
+      placeholder: |
+        - Exportar a CSV y graficar externamente
+        - Usar matplotlib (demasiado pesado)
+        - Web UI con Flask (complejidad alta)
+    validations:
+      required: false
+
+  - type: dropdown
+    id: category
+    attributes:
+      label: Categoría
+      description: ¿A qué área afecta?
+      options:
+        - Sensores (batería, GPS, cámara, etc.)
+        - Memoria / persistencia
+        - Integración con LLMs
+        - Sub-agentes
+        - UI / CLI
+        - Documentación
+        - Seguridad
+        - Rendimiento
+        - Otro
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: Prioridad que le darías
+      options:
+        - 🔴 Bloqueante (no puedo usar AIION sin esto)
+        - 🟠 Alta (mejora significativa)
+        - 🟡 Media (nice-to-have)
+        - 🟢 Baja (sugerencia futura)
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Caso de uso concreto
+      description: "Describe un escenario real donde usarías esta feature"
+      placeholder: |
+        Cuando viajo, quiero ver el consumo de batería de las últimas
+        24h en mi teléfono para entender qué apps consumen más.
+    validations:
+      required: false
+
+  - type: dropdown
+    id: complexity
+    attributes:
+      label: Complejidad estimada (tu intuición)
+      options:
+        - Pequeña (1-2 archivos, <100 líneas)
+        - Media (3-5 archivos, refactor necesario)
+        - Grande (nuevo módulo)
+        - No sé / depende
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Verificaciones previas
+      options:
+        - label: He buscado en issues existentes y no encontré esta sugerencia
+          required: true
+        - label: He leído el ROADMAP / plans del proyecto
+          required: true
+        - label: Estoy dispuesto a enviar un PR si la idea es aceptada
+          required: false
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Mockups, capturas, referencias
+      description: "Links, imágenes, sketches o referencias externas"
+      placeholder: |
+        - Screenshot de cómo lo imagino
+        - Link a herramienta similar que hace esto bien
+        - Referencia a un paper o RFC
