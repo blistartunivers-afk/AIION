@@ -1,5 +1,5 @@
 """aiion/core.py — Orquestador: system prompt, loop del agente, comandos internos y main()."""
-import json, os, re, subprocess, sys, shutil, urllib.request
+import json, os, re, subprocess, sys, shutil, urllib.request, time
 from pathlib import Path
 from datetime import datetime
 
@@ -15,6 +15,7 @@ from aiion.memory.persistence import (
     memory_load, memory_append, history_save, history_load_all,
     history_summary_for_prompt, MEMORY_FILE,
 )
+from aiion.memory.fewshot import get_few_shot, format_few_shot_block, get_stats as fewshot_stats
 from aiion.sensors.daemon import sensor_start, sensor_stop, sensor_last
 from aiion.sensors.collectors import SENSOR_STATE, SENSOR_INTERVALS
 from aiion.voice.tts import speak, VOICE_STATE
@@ -23,6 +24,7 @@ from aiion.config import VOICES
 from aiion.llm.keys import STATE, load_api_keys, current_key
 from aiion.llm.client import chat_native, chat_react_text, parse_react, TOOL_CALL_STATE
 from aiion.tools.registry import TOOLS, TOOL_MAP, DANGEROUS_TOOLS, execute_tool, ask_permission
+from aiion.intelligence import KALMAN, MYTHOS, CB
 
 def status_bar():
     """Barra de estado en vivo: RAM | Sensores | Voz | Modelo"""
@@ -51,6 +53,53 @@ def build_system_prompt(user_input=""):
     sens_block=("\nESTADO SENSORIAL EN TIEMPO REAL:\n"+"\n".join(sens_parts)+"\n") if sens_parts else ""
     keys_info=f"Pool {len(STATE['api_keys'])} keys" if STATE["use_cloud"] else "Local"
 
+    # ── Mythos: análisis pre-LLM (logos + pathos + ethos) ─────────────────
+    mythos_block = ""
+    if user_input:
+        try:
+            _analysis = MYTHOS.analyze(user_input)
+            _hint     = MYTHOS.build_hint(_analysis)
+            if _hint:
+                mythos_block = f"\n═══ MYTHOS ANALYSIS ═══\n{_hint}\n"
+        except Exception:
+            pass
+
+    # ── Few-shot bank: ejemplos pasados reales de sara_brain ─────────────
+    # Detecta intención de herramienta por palabras clave y trae ejemplos
+    fewshot_block = ""
+    if user_input:
+        try:
+            _ui = user_input.lower()
+            _INSTR_HINTS = {
+                "run_shell_command": ["ejecuta","corre","lanza","shell","comando","terminal","bash","instala","rm ","mv ","chmod"],
+                "read_file":         ["lee","abre","mostrar archivo","contenido de","ver archivo"],
+                "list_directory":    ["lista","ls ","listar","directorio","carpeta"],
+                "grep_search":       ["busca","grep","regex","patrón"],
+                "write_file":        ["escribe","crea archivo","guarda archivo"],
+                "replace":           ["reemplaza","modifica","cambia línea"],
+                "web_fetch":         ["descarga","fetch","url","http"],
+                "get_android_status":["batería","bateria","wifi","estado del"],
+                "hablar":            ["di","habla","voz","tts","reproduce"],
+                "notificacion":      ["notifica","avisa","notificación"],
+                "get_gps":           ["gps","ubicación","localización","dónde estoy"],
+                "process_manager":   ["procesos","mata","kill","ps "],
+                "memory_search":     ["recuerda","memoria","historial"],
+                "crear_tarea":       ["cron","programa","tarea","agenda"],
+            }
+            _best_instr = None
+            _best_score = 0
+            for instr, hints in _INSTR_HINTS.items():
+                sc = sum(1 for h in hints if h in _ui)
+                if sc > _best_score:
+                    _best_score = sc
+                    _best_instr = instr
+            if _best_instr and _best_score > 0:
+                _examples = get_few_shot(_best_instr, user_input, n=2, only_success=True)
+                if _examples:
+                    fewshot_block = "\n" + format_few_shot_block(_examples) + "\n"
+        except Exception:
+            pass
+
     return (
         "Eres AIION, agente autónomo experto en Linux/Android/Termux con herramientas reales.\n"
         "Tienes acceso a sensores del dispositivo en tiempo real (batería, wifi, GPS, etc).\n"
@@ -58,7 +107,7 @@ def build_system_prompt(user_input=""):
         f"FECHA: {now} | MODO: {'Nube ('+keys_info+')' if STATE['use_cloud'] else 'Local'}\n"
         f"HOME: {home} | CWD: {cwd}\n"
         "IMPORTANTE: En Termux el home es /data/data/com.termux/files/home\n"
-        +mem_block+hist_block+cog_block+sens_block+
+        +mem_block+hist_block+cog_block+sens_block+mythos_block+fewshot_block+
         "\nHERRAMIENTAS:\n"+tools_desc+
         "\n\n════════ PROTOCOLO REACT ════════\n"
         "Para usar herramienta:\n"
@@ -100,6 +149,14 @@ def _print_final(final_response, step):
     print(c(PU,'╚'+'═'*50)+"\n")
 
 def run_agent(user_input, history):
+    # ── Mythos: análisis pre-ejecución (warn si caution) ──────────────────
+    try:
+        _mythos_a = MYTHOS.analyze(user_input)
+        if _mythos_a.get("caution"):
+            print(f"  {c(YL,'⚠ MYTHOS:')} {c(YL, _mythos_a['ethos'])}")
+    except Exception:
+        _mythos_a = {}
+
     messages     = [{"role":"system","content":build_system_prompt(user_input)}]
     messages    += history
     messages.append({"role":"user","content":user_input})
@@ -111,9 +168,20 @@ def run_agent(user_input, history):
         for step in range(MAX_ITER):
             sp = spinner[step % len(spinner)]
             print(c(PU,f"  {sp} Pensando... paso {step+1}/{MAX_ITER}"),end="\r",flush=True)
+            _t0 = time.time()
             try:
                 kind, data, raw_msg = chat_native(messages)
+                # ── Kalman: registrar llamada exitosa ──────────────────────
+                try:
+                    KALMAN.update(STATE.get("provider","ollama"),
+                                  STATE.get("model",""), True, (time.time()-_t0)*1000)
+                except Exception: pass
             except Exception as ex:
+                # ── Kalman: registrar fallo (alimenta cooldown de quota) ──
+                try:
+                    KALMAN.update(STATE.get("provider","ollama"),
+                                  STATE.get("model",""), False, (time.time()-_t0)*1000)
+                except Exception: pass
                 # Si falla tool calling, degradar a ReAct para esta sesión
                 TOOL_CALL_STATE["native"] = False
                 print(c(YL,f"\n  ⚠ Tool calling no soportado, usando ReAct ({ex})"))
@@ -175,9 +243,20 @@ def run_agent(user_input, history):
     for step in range(MAX_ITER):
         sp = spinner[step % len(spinner)]
         print(c(CO,f"  {sp} [ReAct] paso {step+1}/{MAX_ITER}"),end="\r",flush=True)
+        _t0 = time.time()
         try:
             raw = chat_react_text(clean_msgs)
+            # ── Kalman: registrar éxito ───────────────────────────────────
+            try:
+                KALMAN.update(STATE.get("provider","ollama"),
+                              STATE.get("model",""), True, (time.time()-_t0)*1000)
+            except Exception: pass
         except Exception as ex:
+            # ── Kalman: registrar fallo ───────────────────────────────────
+            try:
+                KALMAN.update(STATE.get("provider","ollama"),
+                              STATE.get("model",""), False, (time.time()-_t0)*1000)
+            except Exception: pass
             print(c(RE,f"\n  ✗ API error: {ex}"))
             return messages
         print(" "*55, end="\r")
@@ -313,7 +392,44 @@ def _setup_cloud():
         except (ValueError,KeyboardInterrupt,EOFError): sys.exit(0)
 
 def print_skills():
-    """Lista todas las skills/tools con descripciones y categorías"""
+    """Lista las SKILLS reales registradas en ~/skills/ (como blist)"""
+    import subprocess
+    from pathlib import Path
+    skills_dir = Path.home() / "skills"
+    print(f"\n{c(CY+BOLD,'╔══ 🧠 SKILLS DE AIION — Habilidades del ecosistema ═══╗')}")
+    if not skills_dir.exists():
+        print(f"{c(PU,'║')} {c(YL,'⚠')}  {c(CO,'No existe ~/skills/ — no hay skills registradas aún')}")
+        print(f"{c(PU,'╚'+'═'*60)}\n")
+        return
+    try:
+        script = skills_dir / "skill_manager.py"
+        if script.exists():
+            r = subprocess.run(["python3", str(script), "list"], capture_output=True, text=True, timeout=5)
+            out = r.stdout.strip()
+            if out:
+                for line in out.split("\n"):
+                    print(f"{c(PU,'║')} {c(GR,line)}")
+            else:
+                print(f"{c(PU,'║')} {c(CO,'(skill_manager.py no devolvió skills)')}")
+        else:
+            skills = sorted([d.name for d in skills_dir.iterdir() if d.is_dir()])
+            if skills:
+                print(f"{c(PU,'║')} {c(CO,'Skills instaladas (carpetas en ~/skills/):')}")
+                for s in skills:
+                    sk_md = skills_dir / s / "SKILL.md"
+                    has_doc = "📄" if sk_md.exists() else "📁"
+                    print(f"{c(PU,'║')}  {c(GR,'▸')} {c(CY,s)} {c(CO,has_doc)}")
+            else:
+                print(f"{c(PU,'║')} {c(CO,'(carpeta ~/skills/ vacía)')}")
+    except Exception as e:
+        print(f"{c(PU,'║')} {c(RE,'Error:')} {c(CO,str(e))}")
+    print(f"{c(PU,'║')}")
+    print(f"{c(PU,'║')} {c(CO,'Usa')} {c(CY,'/tools')} {c(CO,'para ver las herramientas (read_file, write_file, etc.)')}")
+    print(f"{c(PU,'╚'+'═'*60)}\n")
+
+
+def print_tools():
+    """Lista todas las TOOLS (herramientas) de AIION con descripciones y categorías"""
     skills_cats = {
         "📁 Filesystem (7)": [
             ("read_file", "Lee archivo con líneas numeradas"),
@@ -364,7 +480,7 @@ def print_skills():
     }
     
     total = sum(len(v) for v in skills_cats.values())
-    print(f"\n{c(CY+BOLD,f'╔══ 🎯 SKILLS DE AIION — {total} herramientas ═════════════════╗')}")
+    print(f"\n{c(CY+BOLD,f'╔══ 🛠 TOOLS DE AIION — {total} herramientas ═════════════════╗')}")
     
     for cat, tools in skills_cats.items():
         print(f"{c(PU,'║')} {c(YL+BOLD,cat)}")
@@ -744,6 +860,163 @@ def create_plan(name="nuevo_plan"):
     print(f"{c(D_FG,'  /plan check ' + plan_name + ' F1.1 done')}\n")
 
 
+def cmd_kalman():
+    """Muestra el estado del selector Kalman: scores por modelo y cooldowns."""
+    print(KALMAN.report())
+
+def cmd_mythos(text=""):
+    """Analiza un texto con Mythos o muestra el estado vacío si no se pasa texto."""
+    if text:
+        a = MYTHOS.analyze(text)
+        print(f"{c(CY,'Mythos análisis:')}")
+        for k, v in a.items():
+            print(f"  {c(CO, k+':')} {v}")
+        h = MYTHOS.build_hint(a)
+        if h:
+            print(f"\n{c(CY,'Hint para el prompt:')}\n{h}")
+    else:
+        print(f"{c(YL,'Uso: /mythos <texto a analizar>')}")
+
+def cmd_kalman(arg=""):
+    """Muestra el estado del filtro Kalman de selección de modelos.
+       Uso:
+         /kalman               → reporte completo (todos los modelos)
+         /kalman reset         → limpia todo el estado (debug)
+         /kalman <prov> <model>→ score de un (proveedor, modelo) específico
+    """
+    arg = (arg or "").strip()
+    if arg == "reset":
+        KALMAN.reset()
+        print(f"{c(YL,'Kalman: estado limpiado')}")
+        return
+    parts = arg.split() if arg else []
+    if len(parts) >= 2:
+        prov, model = parts[0], parts[1]
+        sc = KALMAN.score(prov, model)
+        cd = KALMAN.in_quota_cooldown(prov, model)
+        cd_str = c(RE, " [COOLDOWN]") if cd else c(GR, " [OK]")
+        print(f"{c(CY,'Kalman:')} {prov}/{model} → {c(CY+BOLD, f'{sc:.3f}')}{cd_str}")
+    else:
+        print(KALMAN.report())
+
+def cmd_cb(arg=""):
+    """Muestra o gestiona los circuit breakers.
+       Uso:
+         /cb                   → estado de todos
+         /cb reset [tool|all]  → resetea uno o todos
+    """
+    arg = (arg or "").strip()
+    if arg.startswith("reset"):
+        target = arg[5:].strip() or "all"
+        if target == "all":
+            CB.reset()
+            print(f"{c(GR,'OK:')} todos los circuit breakers reseteados")
+        else:
+            CB.reset(target)
+            print(f"{c(GR,'OK:')} circuit breaker de '{target}' reseteado")
+    else:
+        print(CB.report())
+
+def cmd_bestmodel(provider=None):
+    """Sugiere el mejor modelo disponible según Kalman."""
+    prov = provider or STATE.get("provider","ollama")
+    cands = STATE.get("available_models", []) or PREFERRED_MODELS
+    best = KALMAN.best_model(prov, cands)
+    score = KALMAN.score(prov, best) if best else 0.0
+    cdwn  = KALMAN.in_quota_cooldown(prov, best) if best else False
+    cdwn_str = c(RE," [COOLDOWN]") if cdwn else ""
+    print(f"{c(GR,'Mejor modelo para')} {c(CY, prov)}: "
+          f"{c(CY+BOLD, best)} {c(YL, f'(score={score})')}{cdwn_str}")
+
+def cmd_episodes(arg=""):
+    """Lista, busca o muestra episodios (interacciones pasadas) del historial.
+       Uso:
+         /episodes                 → lista los últimos 10 episodios
+         /episodes list [N]        → lista los últimos N (default 10)
+         /episodes search <query>  → busca por similitud TF-IDF
+         /episodes show <n>        → muestra el episodio número n (1=último)
+         /episodes count           → cuenta total
+         /episodes today           → solo de hoy
+    """
+    from aiion.memory.persistence import history_load_all, history_search
+    arg = (arg or "").strip()
+    parts = arg.split(maxsplit=1) if arg else []
+    sub = parts[0].lower() if parts else "list"
+    rest = parts[1] if len(parts) > 1 else ""
+
+    if sub in ("count", "total"):
+        all_h = history_load_all()
+        print(f"{c(GR,'Total episodios:')} {c(CY+BOLD, len(all_h))}")
+        return
+
+    if sub == "search":
+        if not rest:
+            print(c(YL, "  Uso: /episodes search <query>"))
+            return
+        results = history_search(rest, top_k=8)
+        print(f"{c(CY+BOLD, f'╔══ 🔍 Episodios que coinciden con: \"{rest}\" ══╗')}")
+        if not results:
+            print(f"{c(PU,'║')} {c(YL,'(sin resultados)')}")
+        else:
+            for i, h in enumerate(results, 1):
+                ts = h.get("ts", "?")[:19]
+                ui = (h.get("user_input") or h.get("user") or "")[:60].replace("\n"," ")
+                print(f"{c(PU,'║')} {c(CY, f'[{i}]')} {c(CO, ts)}  {c(GR, ui)}")
+        print(c(PU, "╚" + "═*60"))
+        return
+
+    if sub == "show":
+        try:
+            n = int(rest) if rest else 1
+        except ValueError:
+            print(c(YL, "  Uso: /episodes show <número>"))
+            return
+        all_h = history_load_all()
+        if not all_h:
+            print(c(YL, "  (sin episodios guardados)"))
+            return
+        if n < 1 or n > len(all_h):
+            print(c(YL, f"  Rango válido: 1..{len(all_h)}"))
+            return
+        ep = all_h[-n]
+        print(f"{c(CY+BOLD, f'╔══ 📜 Episodio #{n} ══╗')}")
+        print(f"{c(PU,'║')} {c(CO,'ts:')}    {ep.get('ts','?')}")
+        print(f"{c(PU,'║')} {c(CO,'user:')}  {ep.get('user_input') or ep.get('user','')}")
+        print(f"{c(PU,'║')} {c(CO,'agent:')} {ep.get('agent_response') or ep.get('agent','')[:300]}...")
+        print(c(PU, "╚" + "═*60"))
+        return
+
+    if sub == "today":
+        from datetime import datetime
+        today = datetime.now().strftime("%Y-%m-%d")
+        all_h = history_load_all()
+        todays = [h for h in all_h if (h.get("ts","")).startswith(today)]
+        print(f"{c(CY+BOLD, f'╔══ 📅 Episodios de hoy ({today}) ══╗')}")
+        if not todays:
+            print(f"{c(PU,'║')} {c(YL,'(ninguno aún hoy)')}")
+        else:
+            for i, h in enumerate(todays[-10:], 1):
+                ts = h.get("ts", "?")[11:19]
+                ui = (h.get("user_input") or h.get("user") or "")[:55].replace("\n"," ")
+                print(f"{c(PU,'║')} {c(CY, f'[{i}]')} {c(CO, ts)}  {c(GR, ui)}")
+        print(f"{c(PU,'║')} {c(CO, f'Total hoy: {len(todays)}')}")
+        print(c(PU, "╚" + "═*60"))
+        return
+
+    # default: list [N]
+    try:
+        n = int(sub) if sub.isdigit() else 10
+    except ValueError:
+        n = 10
+    all_h = history_load_all()
+    print(f"{c(CY+BOLD, f'╔══ 📚 Últimos {min(n,len(all_h))} episodios (de {len(all_h)}) ══╗')}")
+    for i, h in enumerate(reversed(all_h[-n:]), 1):
+        ts = h.get("ts", "?")[:19]
+        ui = (h.get("user_input") or h.get("user") or "")[:60].replace("\n"," ")
+        print(f"{c(PU,'║')} {c(CY, f'[{i}]')} {c(CO, ts)}  {c(GR, ui)}")
+    print(f"{c(PU,'║')} {c(PU, f'Usa /episodes show <n> para ver uno completo, /episodes search <q> para buscar')}")
+    print(c(PU, "╚" + "═*60"))
+
 def print_status():
     """Resumen ejecutivo del estado de AIION v0.2"""
     print(f"\n{c(CY+BOLD,'╔══ 🧠 AIION STATUS ════════════════════════════════╗')}")
@@ -806,6 +1079,12 @@ def print_help():
 {c(PU,'║')}  {c(CY,'/index')}             Ver índice cognitivo
 {c(PU,'║')}  {c(CY,'/sensors')}           Estado de sensores en tiempo real
 {c(PU,'║')}  {c(CY,'/toolmode')}          Alternar nativo↔ReAct
+{c(PU,'║')}  {c(CY,'/kalman')}            Estado del selector Kalman de modelos
+{c(PU,'║')}  {c(CY,'/mythos <texto>')}    Análisis logos+pathos+ethos
+{c(PU,'║')}  {c(CY,'/cb')}                Estado de los circuit breakers de tools
+{c(PU,'║')}  {c(CY,'/bestmodel')}         Sugerir mejor modelo disponible
+{c(PU,'║')}  {c(CY,'/fewshot <tool>')}    Ejemplos pasados reales (run_shell_command, read_file, etc)
+{c(PU,'║')}  {c(CY,'/episodes [list|search|show|today|count]')}  Historial de interacciones
 {c(PU,'║')}  {c(CY,'/voice test')}        Probar voz
 {c(PU,'║')}  {c(CY,'/voice set <voz>')}   Cambiar voz (Celeste/Valentina/Mateo)
 {c(PU,'║')}  {c(CY,'/voice vol <0-100>')} Volumen
@@ -951,7 +1230,7 @@ def main():
 
         elif user_input=="/ram":
             print(f"\n{c(CY+BOLD,'╔══ RAM Guard ══════════════════════════════')}")
-            print(f"{c(CY,'║')} {RAMGUARD.status()}")
+            print(f"{c(CY,'║')} {RAMGUARD.stats_str()}")
             print(f"{c(CY,'║')} Tendencia: {c(YL,RAMGUARD.trend())}")
             print(c(CY,'╚'+'═'*43)+"\n")
 
@@ -981,23 +1260,7 @@ def main():
         elif user_input=="/model":
             select_mode(); print(c(GR,f"  ✓ Modelo: {STATE['model']}"))
 
-        elif user_input=="/tools":
-            print(f"\n{c(CY+BOLD,'╔══ 28 Tools disponibles ═══════════════════')}")
-            cats={"📁 Filesystem":["read_file","write_file","replace","run_shell_command","list_directory","glob","grep_search"],
-                  "🌐 Web":["web_fetch"],
-                  "🧠 Memoria":["diff_files","memory_search"],
-                  "⚙️ Procesos":["process_manager"],
-                  "📱 Android":["get_android_status","sensor_query","take_photo","listar_camaras","get_gps"],
-                  "🔔 Notif":["notificacion","cancelar_notificacion"],
-                  "📞 Comun":["leer_sms","enviar_sms","historial_llamadas","hacer_llamada","info_telefonia"],
-                  "🔊 Voz":["hablar","listar_voces"],
-                  "⏰ Tareas":["crear_tarea","listar_tareas","eliminar_tarea"]}
-            for cat,tools in cats.items():
-                print(f"{c(PU,'║')} {c(YL+BOLD,cat)}")
-                for t in tools:
-                    danger=c(RE," [permiso]") if t in DANGEROUS_TOOLS else ""
-                    print(f"{c(PU,'║')}   {c(GR,'▸')} {c(CY,t)}{danger}")
-            print(c(PU,'╚'+'═'*43)+"\n")
+        elif user_input=="/tools": print_tools()
 
         elif user_input.startswith("/cd "):
             path=user_input[4:].strip()
@@ -1013,6 +1276,35 @@ def main():
             TOOL_CALL_STATE["native"] = not TOOL_CALL_STATE["native"]
             modo = c(GR,"nativo ✓") if TOOL_CALL_STATE["native"] else c(YL,"ReAct (texto)")
             print(f"  Modo tools: {modo}")
+
+        elif user_input.startswith("/mythos"):
+            cmd_mythos(user_input[7:].strip())
+
+        elif user_input.startswith("/kalman"):
+            cmd_kalman(user_input[7:].strip())
+
+        elif user_input == "/cb" or user_input.startswith("/cb"):
+            cmd_cb(user_input[3:].strip())
+
+        elif user_input.startswith("/episodes"):
+            cmd_episodes(user_input[8:].strip())
+
+        elif user_input.startswith("/bestmodel"):
+            cmd_bestmodel()
+
+        elif user_input.startswith("/fewshot"):
+            args = user_input[8:].strip()
+            if not args or args == "stats":
+                print(json.dumps(fewshot_stats(), indent=2))
+            else:
+                parts = args.split(maxsplit=1)
+                instr = parts[0]
+                qry = parts[1] if len(parts) > 1 else ""
+                examples = get_few_shot(instr, qry, n=5, only_success=True)
+                block = format_few_shot_block(examples)
+                print(f"\n{c(CY+BOLD,f'╔══ Few-Shot Bank — {instr} (top 5) ════════════════╗')}")
+                print(block if block else f"{c(PU,'║')} {c(YL,'(sin ejemplos)')}")
+                print(c(PU,'╚'+'═'*52)+"\n")
 
         elif handle_voice_command(user_input): pass
 

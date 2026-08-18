@@ -65,7 +65,8 @@ def test_schema_version_metadata(tmp_db):
         "SELECT version, name FROM schema_version ORDER BY version", (), tmp_db
     )
     versions = [r["version"] for r in rows]
-    assert versions == [1, 2]
+    # Incluye todas las migraciones aplicadas: 1, 2, 3 (kalman), 4 (circuit_breaker)
+    assert versions == [1, 2, 3, 4]
     assert all(r["name"] for r in rows)
 
 

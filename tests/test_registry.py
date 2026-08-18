@@ -20,12 +20,12 @@ class TestToolDefinitions:
     """Tests para las definiciones de tools."""
 
     def test_tools_count(self):
-        """Verifica que hay 28 tools definidas."""
-        assert len(TOOLS) == 28
+        """Verifica que hay 37 tools definidas (28 base + 9 Code Invest)."""
+        assert len(TOOLS) == 37
 
     def test_tool_map_count(self):
-        """Verifica que TOOL_MAP tiene 28 entradas."""
-        assert len(TOOL_MAP) == 28
+        """Verifica que TOOL_MAP tiene 37 entradas."""
+        assert len(TOOL_MAP) == 37
 
     def test_tool_names_match(self):
         """Nombres en TOOLS coinciden con claves de TOOL_MAP."""
@@ -74,9 +74,13 @@ class TestToolDefinitions:
         voice_tools = {"hablar", "listar_voces"}
         # Tareas (3)
         task_tools = {"crear_tarea", "listar_tareas", "eliminar_tarea"}
+        # Code Invest (9)
+        code_invest_tools = {"code_invest_analyze", "code_invest_file", "code_invest_smells",
+                             "code_invest_dependencies", "code_invest_duplicates", "code_invest_patterns",
+                             "code_invest_dead_code", "code_invest_complexity", "code_invest_god_classes"}
         
         all_expected = (fs_tools | web_tools | mem_tools | proc_tools | 
-                        android_tools | notif_tools | comm_tools | voice_tools | task_tools)
+                        android_tools | notif_tools | comm_tools | voice_tools | task_tools | code_invest_tools)
         actual = set(TOOL_MAP.keys())
         assert actual == all_expected
 

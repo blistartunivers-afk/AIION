@@ -1,0 +1,354 @@
+{
+  "file": "agent_code_investigator.py",
+  "stats": {
+    "functions": [
+      "__init__",
+      "visit_FunctionDef",
+      "visit_ClassDef",
+      "_dotted_name",
+      "visit_Call",
+      "visit_Import",
+      "visit_ImportFrom",
+      "visit_If",
+      "visit_For",
+      "visit_While",
+      "visit_ExceptHandler",
+      "visit_BoolOp",
+      "visit_IfExp",
+      "_function_loc",
+      "_calculate_function_complexity",
+      "visit_FunctionDef",
+      "visit_AsyncFunctionDef",
+      "scan",
+      "__init__",
+      "analyze_file",
+      "emit_event",
+      "run_action",
+      "analyze_code_string",
+      "analyze_function"
+    ],
+    "classes": [
+      "CodeAnalyzer",
+      "VulnerabilityScanner",
+      "AgentCodeInvestigator"
+    ],
+    "imports": [
+      "os",
+      "json",
+      "pathlib",
+      "ast",
+      "re",
+      "datetime.datetime",
+      "sys",
+      "argparse"
+    ],
+    "loc": 345,
+    "risky_calls": [],
+    "complexity": 48,
+    "function_details": [
+      {
+        "name": "__init__",
+        "lineno": 27,
+        "loc": 7,
+        "complexity": 1,
+        "args": [
+          "self"
+        ]
+      },
+      {
+        "name": "visit_FunctionDef",
+        "lineno": 35,
+        "loc": 3,
+        "complexity": 1,
+        "args": [
+          "self",
+          "node"
+        ]
+      },
+      {
+        "name": "visit_ClassDef",
+        "lineno": 39,
+        "loc": 3,
+        "complexity": 1,
+        "args": [
+          "self",
+          "node"
+        ]
+      },
+      {
+        "name": "_dotted_name",
+        "lineno": 43,
+        "loc": 8,
+        "complexity": 4,
+        "args": [
+          "self",
+          "node"
+        ]
+      },
+      {
+        "name": "visit_Call",
+        "lineno": 52,
+        "loc": 11,
+        "complexity": 5,
+        "args": [
+          "self",
+          "node"
+        ]
+      },
+      {
+        "name": "visit_Import",
+        "lineno": 64,
+        "loc": 4,
+        "complexity": 2,
+        "args": [
+          "self",
+          "node"
+        ]
+      },
+      {
+        "name": "visit_ImportFrom",
+        "lineno": 69,
+        "loc": 6,
+        "complexity": 4,
+        "args": [
+          "self",
+          "node"
+        ]
+      },
+      {
+        "name": "visit_If",
+        "lineno": 77,
+        "loc": 3,
+        "complexity": 1,
+        "args": [
+          "self",
+          "node"
+        ]
+      },
+      {
+        "name": "visit_For",
+        "lineno": 81,
+        "loc": 3,
+        "complexity": 1,
+        "args": [
+          "self",
+          "node"
+        ]
+      },
+      {
+        "name": "visit_While",
+        "lineno": 85,
+        "loc": 3,
+        "complexity": 1,
+        "args": [
+          "self",
+          "node"
+        ]
+      },
+      {
+        "name": "visit_ExceptHandler",
+        "lineno": 89,
+        "loc": 3,
+        "complexity": 1,
+        "args": [
+          "self",
+          "node"
+        ]
+      },
+      {
+        "name": "visit_BoolOp",
+        "lineno": 93,
+        "loc": 4,
+        "complexity": 1,
+        "args": [
+          "self",
+          "node"
+        ]
+      },
+      {
+        "name": "visit_IfExp",
+        "lineno": 98,
+        "loc": 3,
+        "complexity": 1,
+        "args": [
+          "self",
+          "node"
+        ]
+      },
+      {
+        "name": "_function_loc",
+        "lineno": 103,
+        "loc": 5,
+        "complexity": 4,
+        "args": [
+          "self",
+          "func_node"
+        ]
+      },
+      {
+        "name": "_calculate_function_complexity",
+        "lineno": 109,
+        "loc": 13,
+        "complexity": 6,
+        "args": [
+          "self",
+          "func_node"
+        ]
+      },
+      {
+        "name": "visit_FunctionDef",
+        "lineno": 123,
+        "loc": 12,
+        "complexity": 1,
+        "args": [
+          "self",
+          "node"
+        ]
+      },
+      {
+        "name": "visit_AsyncFunctionDef",
+        "lineno": 136,
+        "loc": 3,
+        "complexity": 1,
+        "args": [
+          "self",
+          "node"
+        ]
+      },
+      {
+        "name": "scan",
+        "lineno": 152,
+        "loc": 13,
+        "complexity": 5,
+        "args": [
+          "self",
+          "content"
+        ]
+      },
+      {
+        "name": "__init__",
+        "lineno": 168,
+        "loc": 5,
+        "complexity": 1,
+        "args": [
+          "self"
+        ]
+      },
+      {
+        "name": "analyze_file",
+        "lineno": 174,
+        "loc": 59,
+        "complexity": 6,
+        "args": [
+          "self",
+          "file_path",
+          "complexity_threshold",
+          "top_n"
+        ]
+      },
+      {
+        "name": "emit_event",
+        "lineno": 234,
+        "loc": 7,
+        "complexity": 3,
+        "args": [
+          "self",
+          "kind",
+          "payload"
+        ]
+      },
+      {
+        "name": "run_action",
+        "lineno": 243,
+        "loc": 31,
+        "complexity": 9,
+        "args": [
+          "params"
+        ]
+      },
+      {
+        "name": "analyze_code_string",
+        "lineno": 276,
+        "loc": 26,
+        "complexity": 4,
+        "args": [
+          "source",
+          "complexity_threshold"
+        ]
+      },
+      {
+        "name": "analyze_function",
+        "lineno": 303,
+        "loc": 25,
+        "complexity": 5,
+        "args": [
+          "source"
+        ]
+      }
+    ]
+  },
+  "top_complex_functions": [
+    {
+      "name": "run_action",
+      "lineno": 243,
+      "loc": 31,
+      "complexity": 9,
+      "args": [
+        "params"
+      ]
+    },
+    {
+      "name": "_calculate_function_complexity",
+      "lineno": 109,
+      "loc": 13,
+      "complexity": 6,
+      "args": [
+        "self",
+        "func_node"
+      ]
+    },
+    {
+      "name": "analyze_file",
+      "lineno": 174,
+      "loc": 59,
+      "complexity": 6,
+      "args": [
+        "self",
+        "file_path",
+        "complexity_threshold",
+        "top_n"
+      ]
+    },
+    {
+      "name": "visit_Call",
+      "lineno": 52,
+      "loc": 11,
+      "complexity": 5,
+      "args": [
+        "self",
+        "node"
+      ]
+    },
+    {
+      "name": "scan",
+      "lineno": 152,
+      "loc": 13,
+      "complexity": 5,
+      "args": [
+        "self",
+        "content"
+      ]
+    }
+  ],
+  "vulnerabilities": [],
+  "todos": [],
+  "interpretation": {
+    "complexity_threshold": 10,
+    "function_count": 24,
+    "high_complexity_functions": [],
+    "complexity_per_function_avg": 2.88,
+    "complexity_per_function_max": 9,
+    "note": "Datos en 'stats'. Esta clave es INTERPRETACI\u00d3N; aj\u00fastala o ign\u00f3rala seg\u00fan tu criterio."
+  },
+  "summary": "24 funciones, 3 clases, 345 l\u00edneas, complejidad ciclom\u00e1tica total 48. 0 vulnerabilidades, 0 TODO/FIXME pendientes. McCabe max por funci\u00f3n: 9, promedio: 2.88."
+}

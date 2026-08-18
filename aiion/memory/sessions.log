@@ -1,0 +1,22 @@
+
+[2026-07-23 20:18] Sesión con Estiven. Avances en blistv11.py:
+  - Lista negra de comandos peligrosos en tool_run_shell_command (23/23 tests OK)
+  - Cubre: rm -rf /, /boot, /etc, /home, /var, /opt; dd a disco; mkfs; fork bomb; curl|bash; reverse shells
+  - Timeout máximo de 300s (5 min) para evitar colgar el agente
+  - Funciones: 332 (era 273), 8185 líneas (era 7971)
+  - Plan de producción actualizado: F2.7 y F2.8 marcados como completados
+
+[2026-07-23 20:35] Sesión de hardening adicional blistv11.py:
+  - 3 except: crudos → except (json.JSONDecodeError, ValueError, SyntaxError) en parser ReAct
+  - Inyección shell prevenida con shlex.quote en: tool_set_reminder (message), tool_brightness (val), tool_volume (stream+level), tool_take_photo (camera_id+filename)
+  - timeouts agregados: tool_brightness (10s), tool_volume (10s), tool_media_play keyevent (5s)
+  - input keyevent ahora con capture_output=True para no contaminar stdout
+  - Total: 278 funciones, 8189 líneas, 362KB. Sin funciones duplicadas.
+  - Pendiente: 227 print() y 0 logger calls — considerar logging centralizado
+
+[2026-07-23 20:36] Logging centralizado agregado a blistv11.py:
+  - logging.basicConfig con FileHandler ~/.blist/logs/blist.log + StreamHandler stderr
+  - _log_silent_error() ahora también envía al logger (nivel WARNING)
+  - Métricas finales: 278 funciones, 8212 líneas, 362KB
+  - 7 shlex.quote (anti-inyección), 113 timeouts en subprocess
+  - 247 try / 258 except (cobertura sólida)

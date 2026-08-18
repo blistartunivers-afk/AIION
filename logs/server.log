@@ -1,0 +1,77 @@
+::ffff:192.168.1.2 - - [30/Jul/2026 07:47:49] "GET /unified_panel.html HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [30/Jul/2026 08:10:25] "GET /aiion_command.html HTTP/1.1" 200 -
+::ffff:192.168.1.2 - - [30/Jul/2026 08:10:25] "GET /aiion_command.html HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [30/Jul/2026 08:10:32] "GET /aiion_command.html HTTP/1.1" 200 -
+::ffff:192.168.1.2 - - [30/Jul/2026 08:10:32] "GET /aiion_command.html HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [30/Jul/2026 08:10:53] "GET /aiion_command.html HTTP/1.1" 200 -
+::ffff:192.168.1.2 - - [30/Jul/2026 08:10:53] "GET /aiion_command.html HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [30/Jul/2026 08:11:08] "GET /aiion_command.html HTTP/1.1" 200 -
+::ffff:192.168.1.2 - - [30/Jul/2026 08:11:08] "GET /aiion_command.html HTTP/1.1" 200 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:04:12] code 400, message Bad request version ('êê\\x13\\x01\\x13\\x02\\x13\\x03À+À/À,À0Ì©Ì¨À\\x13À\\x14\\x00\\x9c\\x00\\x9d\\x00/\\x005\\x01\\x00\\x06Y\\x1a\\x1a\\x00\\x00\\x00')
+::ffff:192.168.1.2 - - [30/Jul/2026 11:04:12] "\x16\x03\x01\x06Æ\x01\x00\x06Â\x03\x03ìVÜ\x965%\x188ÒÑmap\x989\x99ýþÝ\x1aº­Î1J#ÇÐRXù÷ !?6}¹\x02ûÕ(¿_\x97&»\x90}b3\x04»LS±\x9c¤î\x90\x7fe0×\x0c\x00 êê\x13\x01\x13\x02\x13\x03À+À/À,À0Ì©Ì¨À\x13À\x14\x00\x9c\x00\x9d\x00/\x005\x01\x00\x06Y\x1a\x1a\x00\x00\x00" 400 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:04:12] code 400, message Bad request version ('È|ÉÜH')
+::ffff:192.168.1.2 - - [30/Jul/2026 11:04:12] "\x16\x03\x01\x06æ\x01\x00\x06â\x03\x03\x16ki¿\x1fñÎ\x03\x90þà~7ØÔ È|ÉÜH" 400 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:04:31] "GET /aiion_command.html HTTP/1.1" 200 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:04:32] code 404, message File not found
+::ffff:192.168.1.2 - - [30/Jul/2026 11:04:32] "GET /favicon.ico HTTP/1.1" 404 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:06] "GET /aiion_command.html HTTP/1.1" 304 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:41] "GET /dashboard_v2.html HTTP/1.1" 200 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] "GET /router.html HTTP/1.1" 200 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] code 404, message File not found
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] "GET /css/global.css HTTP/1.1" 404 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] code 404, message File not found
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] "GET /css/ui-lightness/jquery-ui-1.8.21.custom.css HTTP/1.1" 404 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] code 404, message File not found
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] code 404, message File not found
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] code 404, message File not found
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] code 404, message File not found
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] code 404, message File not found
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] "GET /scripts/jquery-migrate-1.0.0.js?ver=9.1.103GE4AL HTTP/1.1" 404 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] code 404, message File not found
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] "GET /base.js?ver=9.1.103GE4AL HTTP/1.1" 404 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] "GET /scripts/jquery-1.9.0.min.js?ver=9.1.103GE4AL HTTP/1.1" 404 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] "GET /scripts/json2.js?ver=9.1.103GE4AL HTTP/1.1" 404 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] "GET /scripts/underscore.js?ver=9.1.103GE4AL HTTP/1.1" 404 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] "GET /scripts/jquery-ui-1.9.2.custom.min.js?ver=9.1.103GE4AL HTTP/1.1" 404 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] code 404, message File not found
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] "GET /mib.js?ver=9.1.103GE4AL HTTP/1.1" 404 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] code 404, message File not found
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] code 404, message File not found
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] code 404, message File not found
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] code 404, message File not found
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] "GET /base_mso.js?ver=9.1.103GE4AL HTTP/1.1" 404 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] "GET /crypt.js?ver=9.1.103GE4AL HTTP/1.1" 404 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] code 404, message File not found
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] "GET /base_95x.js?ver=9.1.103GE4AL HTTP/1.1" 404 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] "GET /archive.js?ver=9.1.103GE4AL HTTP/1.1" 404 -
+::ffff:192.168.1.2 - - [30/Jul/2026 11:05:54] "GET /text.js?ver=9.1.103GE4AL HTTP/1.1" 404 -
+----------------------------------------
+Exception occurred during processing of request from ('::ffff:192.168.1.2', 52142, 0, 0)
+Traceback (most recent call last):
+  File "/data/data/com.termux/files/usr/lib/python3.14/socketserver.py", line 697, in process_request_thread
+    self.finish_request(request, client_address)
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.14/http/server.py", line 1418, in finish_request
+    self.RequestHandlerClass(request, client_address, self,
+    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                             directory=args.directory)
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.14/http/server.py", line 732, in __init__
+    super().__init__(*args, **kwargs)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.14/socketserver.py", line 766, in __init__
+    self.handle()
+    ~~~~~~~~~~~^^
+  File "/data/data/com.termux/files/usr/lib/python3.14/http/server.py", line 496, in handle
+    self.handle_one_request()
+    ~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/data/data/com.termux/files/usr/lib/python3.14/http/server.py", line 464, in handle_one_request
+    self.raw_requestline = self.rfile.readline(65537)
+                           ~~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "/data/data/com.termux/files/usr/lib/python3.14/socket.py", line 729, in readinto
+    return self._sock.recv_into(b)
+           ~~~~~~~~~~~~~~~~~~~~^^^
+ConnectionAbortedError: [Errno 103] Software caused connection abort
+----------------------------------------
+::ffff:127.0.0.1 - - [30/Jul/2026 13:18:49] "GET /aiion_command.html HTTP/1.1" 200 -
+::ffff:127.0.0.1 - - [30/Jul/2026 13:18:49] "GET /kalman_test.html HTTP/1.1" 200 -

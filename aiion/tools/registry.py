@@ -16,6 +16,12 @@ from aiion.tools.communication import (
     tool_leer_sms, tool_enviar_sms, tool_historial_llamadas, tool_hacer_llamada,
     tool_info_telefonia, tool_hablar, tool_listar_voces,
 )
+from aiion.intelligence.code_invest import (
+    CodeInvest,
+    code_invest_analyze, code_invest_file, code_invest_smells,
+    code_invest_dependencies, code_invest_duplicates, code_invest_patterns,
+    code_invest_dead_code, code_invest_complexity, code_invest_god_classes,
+)
 
 SESSION_ALLOWED = set()
 
@@ -85,6 +91,25 @@ TOOLS = [
      "parameters":{"type":"object","properties":{},"required":[]}}},
     {"type":"function","function":{"name":"eliminar_tarea","description":"Elimina tarea programada por nombre o ID.",
      "parameters":{"type":"object","properties":{"id":{"type":"string"}},"required":["id"]}}},
+    # ── CODE INVEST (9) ───────────────────────────────────────────────────────
+    {"type":"function","function":{"name":"code_invest_analyze","description":"Análisis completo de código (Code Invest) en proyecto Python: métricas, code smells, dependencias, duplicados, patrones, anti-patrones, código muerto, complejidad, God Classes.",
+     "parameters":{"type":"object","properties":{"project_path":{"type":"string","description":"Ruta al proyecto (default: directorio actual)"},"patterns":{"type":"array","items":{"type":"string"},"description":"Patrones glob (default: ['**/*.py'])"},"format":{"type":"string","enum":["text","markdown","json"],"description":"Formato de salida","default":"text"}},"required":["project_path"]}}},
+    {"type":"function","function":{"name":"code_invest_file","description":"Análisis profundo de un solo archivo Python.",
+     "parameters":{"type":"object","properties":{"file_path":{"type":"string","description":"Ruta al archivo .py"},"format":{"type":"string","enum":["text","markdown","json"],"default":"text"}},"required":["file_path"]}}},
+    {"type":"function","function":{"name":"code_invest_smells","description":"Lista code smells detectados en el proyecto.",
+     "parameters":{"type":"object","properties":{"project_path":{"type":"string","default":"."},"severity":{"type":"string","enum":["critical","warning","info","all"],"default":"all"}},"required":["project_path"]}}},
+    {"type":"function","function":{"name":"code_invest_dependencies","description":"Análisis de dependencias y acoplamiento (circular deps, Ca/Ce, inestabilidad).",
+     "parameters":{"type":"object","properties":{"project_path":{"type":"string","default":"."},"format":{"type":"string","enum":["text","json"],"default":"text"}},"required":["project_path"]}}},
+    {"type":"function","function":{"name":"code_invest_duplicates","description":"Detecta código duplicado en el proyecto.",
+     "parameters":{"type":"object","properties":{"project_path":{"type":"string","default":"."},"min_lines":{"type":"integer","default":6},"threshold":{"type":"number","default":0.8}},"required":["project_path"]}}},
+    {"type":"function","function":{"name":"code_invest_patterns","description":"Detecta patrones de diseño (GoF) y anti-patrones.",
+     "parameters":{"type":"object","properties":{"project_path":{"type":"string","default":"."}},"required":["project_path"]}}},
+    {"type":"function","function":{"name":"code_invest_dead_code","description":"Detecta código muerto (imports, funciones, clases no usadas).",
+     "parameters":{"type":"object","properties":{"project_path":{"type":"string","default":"."}},"required":["project_path"]}}},
+    {"type":"function","function":{"name":"code_invest_complexity","description":"Ranking de funciones/métodos más complejos del proyecto.",
+     "parameters":{"type":"object","properties":{"project_path":{"type":"string","default":"."},"top":{"type":"integer","default":20}},"required":["project_path"]}}},
+    {"type":"function","function":{"name":"code_invest_god_classes","description":"Detecta God Classes (clases que hacen demasiado).",
+     "parameters":{"type":"object","properties":{"project_path":{"type":"string","default":"."}},"required":["project_path"]}}},
 ]
 
 def tool_memory_search(query, top_k=3):
@@ -146,9 +171,19 @@ TOOL_MAP = {
     "crear_tarea":          tool_crear_tarea,
     "listar_tareas":        tool_listar_tareas,
     "eliminar_tarea":       tool_eliminar_tarea,
+    # Code Invest (9 tools)
+    "code_invest_analyze":  code_invest_analyze,
+    "code_invest_file":     code_invest_file,
+    "code_invest_smells":   code_invest_smells,
+    "code_invest_dependencies": code_invest_dependencies,
+    "code_invest_duplicates":   code_invest_duplicates,
+    "code_invest_patterns": code_invest_patterns,
+    "code_invest_dead_code":    code_invest_dead_code,
+    "code_invest_complexity":   code_invest_complexity,
+    "code_invest_god_classes":  code_invest_god_classes,
 }
 
-assert len(TOOL_MAP)==28, f"Error: {len(TOOL_MAP)} tools (esperadas 28)"
+assert len(TOOL_MAP)==37, f"Error: {len(TOOL_MAP)} tools (esperadas 37)"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # PERMISOS
