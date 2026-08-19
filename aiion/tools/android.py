@@ -1,9 +1,15 @@
 """aiion/tools/android.py — Tools de dispositivo Android: sensores, cámara, GPS, notificaciones, tareas."""
 import json, subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from datetime import datetime
 from aiion.sensors.daemon import sensor_last, sensor_query
 from aiion.sensors.collectors import SENSOR_INTERVALS, _termux, _sh
+
+# FIX #2: timeouts agresivos para el fallback (antes 10s default = 20s acumulado)
+_FALLBACK_TIMEOUTS = {
+    "battery": 3, "wifi": 3, "system": 3, "sensors": 4, "location": 5,
+}
 
 def tool_get_android_status(detail="all"):
     parts={}
@@ -12,13 +18,25 @@ def tool_get_android_status(detail="all"):
         if detail=="all" or detail==sensor:
             d=sensor_last(sensor)
             if d: parts[sensor]=d
-    # Fallback si sensores no corrieron aun
-    if not parts.get("battery"):
-        d=_termux("termux-battery-status")
-        if d: parts["battery"]=d
-    if not parts.get("wifi"):
-        d=_termux("termux-wifi-connectioninfo")
-        if d: parts["wifi"]=d
+    # FIX #2: fallback en PARALELO con timeouts agresivos (antes secuencial = 20s)
+    def _fallback(sensor, cmd):
+        return sensor, _termux(cmd, timeout=_FALLBACK_TIMEOUTS.get(sensor, 3))
+
+    needs_fallback = []
+    if not parts.get("battery"):  needs_fallback.append(("battery", "termux-battery-status"))
+    if not parts.get("wifi"):     needs_fallback.append(("wifi",    "termux-wifi-connectioninfo"))
+    if not parts.get("system"):   needs_fallback.append(("system",  "top -bn1 -n1 | head -5; free -m"))
+    if not parts.get("sensors"):  needs_fallback.append(("sensors", "termux-sensor -d 1 -n 1 2>&1 | head -3"))
+    # location NO en fallback: consume demasiada bateria, esperar sensor daemon
+
+    if needs_fallback:
+        with ThreadPoolExecutor(max_workers=4) as ex:
+            futures = [ex.submit(_fallback, s, c) for s, c in needs_fallback]
+            for f in as_completed(futures, timeout=6):
+                try:
+                    name, data = f.result()
+                    if data: parts[name] = data
+                except: pass
     return json.dumps(parts,indent=2,ensure_ascii=False) if parts else "Sin datos de sensores aún (espera 10s)"
 
 def tool_sensor_query(sensor, minutes=60, limit=50):

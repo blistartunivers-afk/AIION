@@ -1,0 +1,159 @@
+[daemon] AIION_HOME = /data/data/com.termux/files/home/AIION
+[daemon] Sensor daemon arrancado (hilo en background)
+[daemon] Agentes activos (9): ['core', 'claude', 'blist_bridge', 'github', 'drive', 'sara', 'android', 'communication', 'filesystem']
+[daemon] Iniciando ciclo autónomo cada 60s
+
+[daemon] ─── Ciclo #1 ──────────────────────────────
+
+[38;2;139;233;253m[1m╔══ 🩺 AIION DOCTOR — Diagnóstico del Sistema ═══════╗[0m
+[38;2;189;147;249m║[0m [1mChequeos realizados:[0m 10
+[38;2;189;147;249m║[0m [1mPasados:[0m [38;2;80;250;123m7[0m [1m| Fallos:[0m [38;2;255;85;85m3[0m
+[38;2;189;147;249m║[0m [1mSalud del sistema:[0m [38;2;241;250;140m[1m70/100[0m ([38;2;241;250;140m[1mBUENO[0m)
+[38;2;189;147;249m║[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mRAM disponible[0m [38;2;98;114;164m—[0m [38;2;248;248;242m69% usado (1136MB libres)[0m
+[38;2;189;147;249m║[0m  [38;2;255;85;85m✗[0m [38;2;255;85;85mModelo LLM[0m [38;2;98;114;164m—[0m [38;2;248;248;242mno configurado[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mModo local[0m [38;2;98;114;164m—[0m [38;2;248;248;242msin keys necesarias[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mSensores activos[0m [38;2;98;114;164m—[0m [38;2;248;248;242m13 registrados[0m
+[38;2;189;147;249m║[0m  [38;2;255;85;85m✗[0m [38;2;255;85;85mTests unitarios[0m [38;2;98;114;164m—[0m [38;2;248;248;242mfallaron[0m
+[38;2;189;147;249m║[0m  [38;2;255;85;85m✗[0m [38;2;255;85;85mBackup core.py[0m [38;2;98;114;164m—[0m [38;2;248;248;242mno existe[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mMemoria persistente[0m [38;2;98;114;164m—[0m [38;2;248;248;242m883 chars[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mSistema de voz[0m [38;2;98;114;164m—[0m [38;2;248;248;242m4 voces disponibles[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mDisco libre[0m [38;2;98;114;164m—[0m [38;2;248;248;242m35.5 GB disponibles[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mCWD escribible[0m [38;2;98;114;164m—[0m [38;2;248;248;242m/data/data/com.termux/files/home/AIION[0m
+[38;2;189;147;249m║[0m
+[38;2;189;147;249m║[0m [38;2;241;250;140m[1m💡 Sugerencias:[0m
+[38;2;189;147;249m║[0m   [38;2;98;114;164m▸[0m Usa /model para configurar uno
+[38;2;189;147;249m║[0m   [38;2;98;114;164m▸[0m Revisar: Tests unitarios
+[38;2;189;147;249m║[0m   [38;2;98;114;164m▸[0m Crea un backup: cp aiion/core.py aiion/core.py.bak
+[38;2;189;147;249m╚══════════════════════════════════════════════════════════[0m
+
+  core.doctor           → success (1923ms)
+  blist_bridge.health   → success (66ms)
+  github.status         → success (25ms)
+  drive.list            → success (1008ms)
+  android.status        → success (3031ms)
+  filesystem.ls         → success (13ms)
+
+[daemon] ─── Ciclo #2 ──────────────────────────────
+
+[38;2;139;233;253m[1m╔══ 🩺 AIION DOCTOR — Diagnóstico del Sistema ═══════╗[0m
+[38;2;189;147;249m║[0m [1mChequeos realizados:[0m 10
+[38;2;189;147;249m║[0m [1mPasados:[0m [38;2;80;250;123m7[0m [1m| Fallos:[0m [38;2;255;85;85m3[0m
+[38;2;189;147;249m║[0m [1mSalud del sistema:[0m [38;2;241;250;140m[1m70/100[0m ([38;2;241;250;140m[1mBUENO[0m)
+[38;2;189;147;249m║[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mRAM disponible[0m [38;2;98;114;164m—[0m [38;2;248;248;242m72% usado (1021MB libres)[0m
+[38;2;189;147;249m║[0m  [38;2;255;85;85m✗[0m [38;2;255;85;85mModelo LLM[0m [38;2;98;114;164m—[0m [38;2;248;248;242mno configurado[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mModo local[0m [38;2;98;114;164m—[0m [38;2;248;248;242msin keys necesarias[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mSensores activos[0m [38;2;98;114;164m—[0m [38;2;248;248;242m13 registrados[0m
+[38;2;189;147;249m║[0m  [38;2;255;85;85m✗[0m [38;2;255;85;85mTests unitarios[0m [38;2;98;114;164m—[0m [38;2;248;248;242mfallaron[0m
+[38;2;189;147;249m║[0m  [38;2;255;85;85m✗[0m [38;2;255;85;85mBackup core.py[0m [38;2;98;114;164m—[0m [38;2;248;248;242mno existe[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mMemoria persistente[0m [38;2;98;114;164m—[0m [38;2;248;248;242m883 chars[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mSistema de voz[0m [38;2;98;114;164m—[0m [38;2;248;248;242m4 voces disponibles[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mDisco libre[0m [38;2;98;114;164m—[0m [38;2;248;248;242m35.5 GB disponibles[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mCWD escribible[0m [38;2;98;114;164m—[0m [38;2;248;248;242m/data/data/com.termux/files/home/AIION[0m
+[38;2;189;147;249m║[0m
+[38;2;189;147;249m║[0m [38;2;241;250;140m[1m💡 Sugerencias:[0m
+[38;2;189;147;249m║[0m   [38;2;98;114;164m▸[0m Usa /model para configurar uno
+[38;2;189;147;249m║[0m   [38;2;98;114;164m▸[0m Revisar: Tests unitarios
+[38;2;189;147;249m║[0m   [38;2;98;114;164m▸[0m Crea un backup: cp aiion/core.py aiion/core.py.bak
+[38;2;189;147;249m╚══════════════════════════════════════════════════════════[0m
+
+  core.doctor           → success (3202ms)
+  blist_bridge.health   → success (5ms)
+  github.status         → success (71ms)
+  drive.list            → success (1322ms)
+  android.status        → success (343ms)
+  filesystem.ls         → success (4ms)
+
+[daemon] ─── Ciclo #3 ──────────────────────────────
+
+[38;2;139;233;253m[1m╔══ 🩺 AIION DOCTOR — Diagnóstico del Sistema ═══════╗[0m
+[38;2;189;147;249m║[0m [1mChequeos realizados:[0m 10
+[38;2;189;147;249m║[0m [1mPasados:[0m [38;2;80;250;123m7[0m [1m| Fallos:[0m [38;2;255;85;85m3[0m
+[38;2;189;147;249m║[0m [1mSalud del sistema:[0m [38;2;241;250;140m[1m70/100[0m ([38;2;241;250;140m[1mBUENO[0m)
+[38;2;189;147;249m║[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mRAM disponible[0m [38;2;98;114;164m—[0m [38;2;248;248;242m53% usado (1717MB libres)[0m
+[38;2;189;147;249m║[0m  [38;2;255;85;85m✗[0m [38;2;255;85;85mModelo LLM[0m [38;2;98;114;164m—[0m [38;2;248;248;242mno configurado[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mModo local[0m [38;2;98;114;164m—[0m [38;2;248;248;242msin keys necesarias[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mSensores activos[0m [38;2;98;114;164m—[0m [38;2;248;248;242m13 registrados[0m
+[38;2;189;147;249m║[0m  [38;2;255;85;85m✗[0m [38;2;255;85;85mTests unitarios[0m [38;2;98;114;164m—[0m [38;2;248;248;242mfallaron[0m
+[38;2;189;147;249m║[0m  [38;2;255;85;85m✗[0m [38;2;255;85;85mBackup core.py[0m [38;2;98;114;164m—[0m [38;2;248;248;242mno existe[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mMemoria persistente[0m [38;2;98;114;164m—[0m [38;2;248;248;242m883 chars[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mSistema de voz[0m [38;2;98;114;164m—[0m [38;2;248;248;242m4 voces disponibles[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mDisco libre[0m [38;2;98;114;164m—[0m [38;2;248;248;242m35.5 GB disponibles[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mCWD escribible[0m [38;2;98;114;164m—[0m [38;2;248;248;242m/data/data/com.termux/files/home/AIION[0m
+[38;2;189;147;249m║[0m
+[38;2;189;147;249m║[0m [38;2;241;250;140m[1m💡 Sugerencias:[0m
+[38;2;189;147;249m║[0m   [38;2;98;114;164m▸[0m Usa /model para configurar uno
+[38;2;189;147;249m║[0m   [38;2;98;114;164m▸[0m Revisar: Tests unitarios
+[38;2;189;147;249m║[0m   [38;2;98;114;164m▸[0m Crea un backup: cp aiion/core.py aiion/core.py.bak
+[38;2;189;147;249m╚══════════════════════════════════════════════════════════[0m
+
+  core.doctor           → success (3109ms)
+  blist_bridge.health   → success (13ms)
+  github.status         → success (89ms)
+  drive.list            → success (1554ms)
+  android.status        → success (399ms)
+  filesystem.ls         → success (17ms)
+
+[daemon] ─── Ciclo #4 ──────────────────────────────
+
+[38;2;139;233;253m[1m╔══ 🩺 AIION DOCTOR — Diagnóstico del Sistema ═══════╗[0m
+[38;2;189;147;249m║[0m [1mChequeos realizados:[0m 10
+[38;2;189;147;249m║[0m [1mPasados:[0m [38;2;80;250;123m7[0m [1m| Fallos:[0m [38;2;255;85;85m3[0m
+[38;2;189;147;249m║[0m [1mSalud del sistema:[0m [38;2;241;250;140m[1m70/100[0m ([38;2;241;250;140m[1mBUENO[0m)
+[38;2;189;147;249m║[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mRAM disponible[0m [38;2;98;114;164m—[0m [38;2;248;248;242m56% usado (1618MB libres)[0m
+[38;2;189;147;249m║[0m  [38;2;255;85;85m✗[0m [38;2;255;85;85mModelo LLM[0m [38;2;98;114;164m—[0m [38;2;248;248;242mno configurado[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mModo local[0m [38;2;98;114;164m—[0m [38;2;248;248;242msin keys necesarias[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mSensores activos[0m [38;2;98;114;164m—[0m [38;2;248;248;242m13 registrados[0m
+[38;2;189;147;249m║[0m  [38;2;255;85;85m✗[0m [38;2;255;85;85mTests unitarios[0m [38;2;98;114;164m—[0m [38;2;248;248;242mfallaron[0m
+[38;2;189;147;249m║[0m  [38;2;255;85;85m✗[0m [38;2;255;85;85mBackup core.py[0m [38;2;98;114;164m—[0m [38;2;248;248;242mno existe[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mMemoria persistente[0m [38;2;98;114;164m—[0m [38;2;248;248;242m883 chars[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mSistema de voz[0m [38;2;98;114;164m—[0m [38;2;248;248;242m4 voces disponibles[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mDisco libre[0m [38;2;98;114;164m—[0m [38;2;248;248;242m35.5 GB disponibles[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mCWD escribible[0m [38;2;98;114;164m—[0m [38;2;248;248;242m/data/data/com.termux/files/home/AIION[0m
+[38;2;189;147;249m║[0m
+[38;2;189;147;249m║[0m [38;2;241;250;140m[1m💡 Sugerencias:[0m
+[38;2;189;147;249m║[0m   [38;2;98;114;164m▸[0m Usa /model para configurar uno
+[38;2;189;147;249m║[0m   [38;2;98;114;164m▸[0m Revisar: Tests unitarios
+[38;2;189;147;249m║[0m   [38;2;98;114;164m▸[0m Crea un backup: cp aiion/core.py aiion/core.py.bak
+[38;2;189;147;249m╚══════════════════════════════════════════════════════════[0m
+
+  core.doctor           → success (2078ms)
+  blist_bridge.health   → success (10ms)
+  github.status         → success (58ms)
+  drive.list            → success (1172ms)
+  android.status        → success (3037ms)
+  filesystem.ls         → success (12ms)
+
+[daemon] ─── Ciclo #5 ──────────────────────────────
+
+[38;2;139;233;253m[1m╔══ 🩺 AIION DOCTOR — Diagnóstico del Sistema ═══════╗[0m
+[38;2;189;147;249m║[0m [1mChequeos realizados:[0m 10
+[38;2;189;147;249m║[0m [1mPasados:[0m [38;2;80;250;123m7[0m [1m| Fallos:[0m [38;2;255;85;85m3[0m
+[38;2;189;147;249m║[0m [1mSalud del sistema:[0m [38;2;241;250;140m[1m70/100[0m ([38;2;241;250;140m[1mBUENO[0m)
+[38;2;189;147;249m║[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mRAM disponible[0m [38;2;98;114;164m—[0m [38;2;248;248;242m58% usado (1540MB libres)[0m
+[38;2;189;147;249m║[0m  [38;2;255;85;85m✗[0m [38;2;255;85;85mModelo LLM[0m [38;2;98;114;164m—[0m [38;2;248;248;242mno configurado[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mModo local[0m [38;2;98;114;164m—[0m [38;2;248;248;242msin keys necesarias[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mSensores activos[0m [38;2;98;114;164m—[0m [38;2;248;248;242m13 registrados[0m
+[38;2;189;147;249m║[0m  [38;2;255;85;85m✗[0m [38;2;255;85;85mTests unitarios[0m [38;2;98;114;164m—[0m [38;2;248;248;242mfallaron[0m
+[38;2;189;147;249m║[0m  [38;2;255;85;85m✗[0m [38;2;255;85;85mBackup core.py[0m [38;2;98;114;164m—[0m [38;2;248;248;242mno existe[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mMemoria persistente[0m [38;2;98;114;164m—[0m [38;2;248;248;242m883 chars[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mSistema de voz[0m [38;2;98;114;164m—[0m [38;2;248;248;242m4 voces disponibles[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mDisco libre[0m [38;2;98;114;164m—[0m [38;2;248;248;242m35.5 GB disponibles[0m
+[38;2;189;147;249m║[0m  [38;2;80;250;123m✓[0m [38;2;80;250;123mCWD escribible[0m [38;2;98;114;164m—[0m [38;2;248;248;242m/data/data/com.termux/files/home/AIION[0m
+[38;2;189;147;249m║[0m
+[38;2;189;147;249m║[0m [38;2;241;250;140m[1m💡 Sugerencias:[0m
+[38;2;189;147;249m║[0m   [38;2;98;114;164m▸[0m Usa /model para configurar uno
+[38;2;189;147;249m║[0m   [38;2;98;114;164m▸[0m Revisar: Tests unitarios
+[38;2;189;147;249m║[0m   [38;2;98;114;164m▸[0m Crea un backup: cp aiion/core.py aiion/core.py.bak
+[38;2;189;147;249m╚══════════════════════════════════════════════════════════[0m
+
+  core.doctor           → success (2805ms)
+  blist_bridge.health   → success (3ms)
+  github.status         → success (91ms)
+  drive.list            → success (35723ms)
+  android.status        → success (3041ms)
+  filesystem.ls         → success (21ms)
