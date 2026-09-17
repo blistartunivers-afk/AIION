@@ -1,5 +1,5 @@
 """aiion/core.py — Orquestador: system prompt, loop del agente, comandos internos y main()."""
-import json, os, re, subprocess, sys, shutil, urllib.request
+import json, os, re, subprocess, sys, shutil, urllib.request, time
 from pathlib import Path
 from datetime import datetime
 
@@ -23,6 +23,7 @@ from aiion.config import VOICES
 from aiion.llm.keys import STATE, load_api_keys, current_key
 from aiion.llm.client import chat_native, chat_react_text, parse_react, TOOL_CALL_STATE
 from aiion.tools.registry import TOOLS, TOOL_MAP, DANGEROUS_TOOLS, execute_tool, ask_permission
+from aiion.core_modules.mythos_engine import MYTHOS
 
 def status_bar():
     """Barra de estado en vivo: RAM | Sensores | Voz | Modelo"""
@@ -50,6 +51,11 @@ def build_system_prompt(user_input=""):
         if d: sens_parts.append(f"  {s}: {json.dumps(d,ensure_ascii=False)[:150]}")
     sens_block=("\nESTADO SENSORIAL EN TIEMPO REAL:\n"+"\n".join(sens_parts)+"\n") if sens_parts else ""
     keys_info=f"Pool {len(STATE['api_keys'])} keys" if STATE["use_cloud"] else "Local"
+    
+    # === MYTHOS ENGINE: Análisis de 3 capas ===
+    mythos_analysis = MYTHOS.analyze(user_input) if user_input else None
+    mythos_hint = MYTHOS.build_hint(mythos_analysis) if mythos_analysis else ""
+    mythos_block = f"\nMYTHOS ANALYSIS:\n  Logos: {mythos_analysis.logos}\n  Pathos: {mythos_analysis.pathos}\n  Ethos: {mythos_analysis.ethos}\n  Intent: {mythos_analysis.intent} (conf: {mythos_analysis.confidence})\n  Hint: {mythos_hint}\n" if mythos_analysis else ""
 
     return (
         "Eres AIION, agente autónomo experto en Linux/Android/Termux con herramientas reales.\n"
@@ -58,7 +64,7 @@ def build_system_prompt(user_input=""):
         f"FECHA: {now} | MODO: {'Nube ('+keys_info+')' if STATE['use_cloud'] else 'Local'}\n"
         f"HOME: {home} | CWD: {cwd}\n"
         "IMPORTANTE: En Termux el home es /data/data/com.termux/files/home\n"
-        +mem_block+hist_block+cog_block+sens_block+
+        +mem_block+hist_block+cog_block+sens_block+mythos_block+
         "\nHERRAMIENTAS:\n"+tools_desc+
         "\n\n════════ PROTOCOLO REACT ════════\n"
         "Para usar herramienta:\n"
@@ -100,17 +106,30 @@ def _print_final(final_response, step):
     print(c(PU,'╚'+'═'*50)+"\n")
 
 def run_agent(user_input, history):
+    # === MYTHOS ENGINE: Análisis pre-ejecución visible ===
+    mythos_analysis = MYTHOS.analyze(user_input)
+    if mythos_analysis.caution:
+        print(f"  {c(YL,'⚠ ETHOS:')} {c(YL, mythos_analysis.ethos)}")
+    elif mythos_analysis.metadata.get("detected_emotions"):
+        emotions = ", ".join(mythos_analysis.metadata["detected_emotions"])
+        print(f"  {c(CY,'💭 Pathos:')} {c(CO, emotions)} | Intent: {c(GR, mythos_analysis.intent)}")
+    
     messages     = [{"role":"system","content":build_system_prompt(user_input)}]
     messages    += history
     messages.append({"role":"user","content":user_input})
     final_response = ""
+    t_run_inicio    = time.time()
+    stats           = {"ram_pico": 0.0}
     spinner        = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 
     # ── Modo nativo ───────────────────────────────────────────────────────────
     if TOOL_CALL_STATE["native"]:
         for step in range(MAX_ITER):
             sp = spinner[step % len(spinner)]
-            print(c(PU,f"  {sp} Pensando... paso {step+1}/{MAX_ITER}"),end="\r",flush=True)
+            t_paso_ini = time.time()
+            ram_pct = RAMGUARD.pressure()*100
+            stats["ram_pico"] = max(stats["ram_pico"], ram_pct)
+            print(c(PU,f"  {sp} Pensando... paso {step+1}/{MAX_ITER}")+c(CO,f"  RAM {ram_pct:.0f}%"),end="\r",flush=True)
             try:
                 kind, data, raw_msg = chat_native(messages)
             except Exception as ex:
@@ -118,7 +137,7 @@ def run_agent(user_input, history):
                 TOOL_CALL_STATE["native"] = False
                 print(c(YL,f"\n  ⚠ Tool calling no soportado, usando ReAct ({ex})"))
                 break
-            print(" "*55, end="\r")
+            print(c(CO,f"  ⏱ paso {step+1}: {time.time()-t_paso_ini:.1f}s · RAM {ram_pct:.0f}%")+" "*15)
 
             if kind == "tool_call":
                 # El modelo quiere llamar tools
@@ -147,6 +166,7 @@ def run_agent(user_input, history):
             else:  # kind == "text" → respuesta final
                 final_response = data.strip()
                 _print_final(final_response, step)
+                print(c(GR,f"✅ Listo en {step+1} pasos · {time.time()-t_run_inicio:.1f}s · RAM pico {stats['ram_pico']:.0f}%"))
                 history_save(user_input, final_response)
                 notify_response(final_response, steps=step)
                 speak(final_response, blocking=False)
@@ -174,13 +194,16 @@ def run_agent(user_input, history):
 
     for step in range(MAX_ITER):
         sp = spinner[step % len(spinner)]
-        print(c(CO,f"  {sp} [ReAct] paso {step+1}/{MAX_ITER}"),end="\r",flush=True)
+        t_paso_ini = time.time()
+        ram_pct = RAMGUARD.pressure()*100
+        stats["ram_pico"] = max(stats["ram_pico"], ram_pct)
+        print(c(CO,f"  {sp} [ReAct] paso {step+1}/{MAX_ITER}")+c(CO,f"  RAM {ram_pct:.0f}%"),end="\r",flush=True)
         try:
             raw = chat_react_text(clean_msgs)
         except Exception as ex:
             print(c(RE,f"\n  ✗ API error: {ex}"))
             return messages
-        print(" "*55, end="\r")
+        print(c(CO,f"  ⏱ paso {step+1}: {time.time()-t_paso_ini:.1f}s · RAM {ram_pct:.0f}%")+" "*15)
         clean_msgs.append({"role":"assistant","content":raw})
         parsed = parse_react(raw)
 
@@ -205,6 +228,7 @@ def run_agent(user_input, history):
         elif parsed[0] == "final":
             final_response = parsed[1]
             _print_final(final_response, step)
+            print(c(GR,f"✅ Listo en {step+1} pasos · {time.time()-t_run_inicio:.1f}s · RAM pico {stats['ram_pico']:.0f}%"))
             history_save(user_input, final_response)
             notify_response(final_response, steps=step)
             speak(final_response, blocking=False)

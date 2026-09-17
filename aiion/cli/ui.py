@@ -54,3 +54,12 @@ def hr(char='─', col=CO): return c(col, char * 52)
 def badge(label, col=PU):
     return f"{c(col+BOLD, f'[{label}]')}"
 
+
+# Alias de compatibilidad para módulos que esperan prefijo N_
+N_GREEN  = D_GREEN
+N_YELLOW = D_YELLOW
+N_RED    = D_RED
+N_ORANGE = D_ORANGE
+N_BLUE   = N_L1
+N_WHITE  = D_FG
+N_DIM    = DIM

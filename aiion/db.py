@@ -24,7 +24,7 @@ _TLS = threading.local()
 _LOCK = threading.RLock()
 
 # Última versión del schema. Cuando se añada una migración nueva, incrementar.
-CURRENT_SCHEMA_VERSION = 2
+CURRENT_SCHEMA_VERSION = 4
 
 
 def get_conn(db_path: Path | None = None) -> sqlite3.Connection:
@@ -115,6 +115,34 @@ MIGRATIONS: list[tuple[int, str, str]] = [
     #     "nombre_migracion",
     #     "CREATE TABLE ...",
     # ),
+    (
+        3,
+        "model_performance",
+        """
+        CREATE TABLE IF NOT EXISTS model_performance(
+            prov_id TEXT NOT NULL,
+            model TEXT NOT NULL,
+            success INTEGER NOT NULL,
+            latency_ms INTEGER NOT NULL,
+            ts REAL NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_mp_prov_model_ts ON model_performance(prov_id, model, ts);
+        """,
+    ),
+    (
+        4,
+        "model_performance_provider",
+        """
+        CREATE TABLE IF NOT EXISTS model_performance(
+            prov_id TEXT NOT NULL,
+            model TEXT NOT NULL,
+            success INTEGER NOT NULL,
+            latency_ms INTEGER NOT NULL,
+            ts REAL NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_mp_prov_model_ts ON model_performance(prov_id, model, ts);
+        """,
+    ),
 ]
 
 

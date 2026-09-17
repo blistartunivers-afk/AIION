@@ -39,7 +39,7 @@ def sensor_last(sensor):
 def sensor_query(sensor, minutes=60, limit=50):
     try:
         rows=query(
-            "SELECT ts,data FROM readings WHERE sensor=? AND ts>=datetime('now',? ||' minutes') ORDER BY ts DESC LIMIT ?",
+            "SELECT ts,data FROM readings WHERE sensor=? AND ts>=datetime('now', 'localtime',? ||' minutes') ORDER BY ts DESC LIMIT ?",
             (sensor, f"-{minutes}", limit),
         )
         return [{"ts":r["ts"],**json.loads(r["data"])} for r in rows]
