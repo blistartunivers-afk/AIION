@@ -22,11 +22,8 @@ venv/
 .env
 .venv
 env/
--e .bak
-__pycache__/
-data/
-.env
-.DS_Store
+
+# Configuración local y módulos privados
 aiion/config.py
 aiion/mcp/
 aiion/subagentes/blist_bridge.py
