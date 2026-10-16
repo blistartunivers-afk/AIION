@@ -11,15 +11,22 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 ### Añadido
 - **CI/CD con GitHub Actions**:
   - `.github/workflows/tests.yml` — pytest en Python 3.10, 3.11, 3.12
-  - `.github/workflows/lint.yml` — Ruff + MyPy + pre-commit hooks
+  - `.github/workflows/lint.yml` — Ruff + MyPy + pre-commit hooks (informativo)
   - `.github/workflows/security.yml` — pip-audit + Gitleaks + Trivy
 - **`.gitleaks.toml`** — Configuración de escaneo de secretos
 - **Badges de CI/CD y release** en `README.md`
 
 ### Cambiado
 - `Makefile`: `make test` ahora ejecuta `pytest tests/ -v` (sin markers inexistentes)
-- `pyproject.toml`: versión actualizada a `0.2.0`
+- `pyproject.toml`: versión actualizada a `0.2.0`, build-system con `wheel`, find packages
 - `tests/test_db.py`: `test_schema_version_metadata` ya no asume exactamente 2 versiones de schema
+- `.gitignore`: `aiion/config.py` ya no está ignorado (valores por defecto seguros)
+- `aiion/__init__.py`: añade `__version__` y `__all__`
+
+### Corregido
+- `ModuleNotFoundError: aiion.config` en CI al incluir `aiion/config.py` en el repo
+- Workflow `security.yml`: usa `aquasecurity/trivy-action@v0.36.0`
+- Workflow `lint.yml`: `continue-on-error` mientras se limpian errores preexistentes
 
 ### Planeado
 - Sistema de plugins dinámicos
