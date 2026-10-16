@@ -49,18 +49,8 @@
 
 ## PGP Public Key
 
-```
------BEGIN PGP PUBLIC KEY BLOCK-----
-
-mDMEZ/... (replace with actual key)
-
------END PGP PUBLIC KEY BLOCK-----
-```
-
-**Fingerprint**: `XXXX XXXX XXXX XXXX XXXX  XXXX XXXX XXXX XXXX XXXX`
-
-> **Note**: Replace the placeholder above with the actual BLIST ecosystem PGP key.
-> Generate with: `gpg --full-generate-key` → `gpg --armor --export security@blist.local`
+> **Nota**: La clave PGP del ecosistema BLIST se publicará aquí cuando esté disponible.
+> Para generarla: `gpg --full-generate-key` → `gpg --armor --export security@blist.local`
 
 ---
 
