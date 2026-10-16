@@ -1,6 +1,6 @@
 # AIION — Agente Autónomo de Ecosistema
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Platform: Termux/Android](https://img.shields.io/badge/platform-Termux%2FAndroid-green.svg)](https://termux.dev/)
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/blistartunivers-afk/AIION)](https://github.com/blistartunivers-afk/AIION/releases)
@@ -121,7 +121,7 @@ python main.py
 | [plans/](plans/) | Templates PHVA para proyectos derivados |
 | [CHANGELOG.md](CHANGELOG.md) | Historial de versiones |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Guía general para contribuidores |
-| [LICENSE](LICENSE) | Licencia MIT |
+| [LICENSE](LICENSE) | Licencia Apache 2.0 |
 
 ---
 
@@ -152,7 +152,9 @@ Si encuentras una vulnerabilidad, por favor abre un **issue** con la etiqueta `s
 
 ## 📜 Licencia
 
-Distribuido bajo la licencia **MIT**. Ver [LICENSE](LICENSE) para más detalles.
+Distribuido bajo la licencia **Apache 2.0**. Ver [LICENSE](LICENSE) para más detalles.
+
+> Apache 2.0 mantiene el espíritu open source y permisivo, pero añade protección explícita contra reclamos de patentes y exige preservar la atribución del autor original.
 
 ---
 
