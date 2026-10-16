@@ -29,3 +29,7 @@ aiion/mcp/
 aiion/subagentes/blist_bridge.py
 plans/blistv12.md
 tests/mcp_integration_test.py
+
+# Backups de herramientas de edicion
+*.bak
+*.bak.*
