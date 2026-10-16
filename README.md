@@ -1,9 +1,12 @@
 # AIION — Agente Autónomo de Ecosistema
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Platform: Termux/Android](https://img.shields.io/badge/platform-Termux%2FAndroid-green.svg)](https://termux.dev/)
-[![Status: v0.2](https://img.shields.io/badge/status-v0.2-orange.svg)](CHANGELOG.md)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/blistartunivers-afk/AIION)](https://github.com/blistartunivers-afk/AIION/releases)
+[![Tests](https://github.com/blistartunivers-afk/AIION/actions/workflows/tests.yml/badge.svg)](https://github.com/blistartunivers-afk/AIION/actions/workflows/tests.yml)
+[![Lint](https://github.com/blistartunivers-afk/AIION/actions/workflows/lint.yml/badge.svg)](https://github.com/blistartunivers-afk/AIION/actions/workflows/lint.yml)
+[![Security](https://github.com/blistartunivers-afk/AIION/actions/workflows/security.yml/badge.svg)](https://github.com/blistartunivers-afk/AIION/actions/workflows/security.yml)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 
 > Agente autónomo modular para Android/Termux con sensores nativos, memoria cognitiva y arquitectura de sub-agentes.

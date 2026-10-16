@@ -38,27 +38,27 @@ install-system: ## Instala dependencias del sistema (Termux/Android)
 # TESTS
 # =============================================================================
 
-test: test-unit ## Ejecuta todos los tests (unit + integration)
+test: ## Ejecuta todos los tests
+	@echo "$(GREEN)Ejecutando tests...$(NC)"
+	$(VENV)/bin/pytest tests/ -v
 
 
-test-unit: ## Tests unitarios rápidos (sin deps externas)
-	@echo "$(GREEN)Ejecutando tests unitarios...$(NC)"
-	$(VENV)/bin/pytest tests/ -m "unit" -v
+test-unit: test ## Alias: todos los tests son unitarios en AIION (sin deps externas)
 
 
 test-integration: ## Tests de integración (requieren termux-api)
-	@echo "$(GREEN)Ejecutando tests de integración...$(NC)"
-	$(VENV)/bin/pytest tests/ -m "integration" -v
+	@echo "$(YELLOW)No hay tests de integración marcados en AIION.$(NC)"
+	$(VENV)/bin/pytest tests/ -v
 
 
 test-android: ## Tests que requieren Android/Termux
-	@echo "$(GREEN)Ejecutando tests Android...$(NC)"
-	$(VENV)/bin/pytest tests/ -m "android" -v
+	@echo "$(YELLOW)No hay tests Android marcados en AIION.$(NC)"
+	$(VENV)/bin/pytest tests/ -v
 
 
 test-slow: ## Tests lentos (>5s)
 	@echo "$(GREEN)Ejecutando tests lentos...$(NC)"
-	$(VENV)/bin/pytest tests/ -m "slow" -v
+	$(VENV)/bin/pytest tests/ -v
 
 
 test-cov: ## Tests con cobertura

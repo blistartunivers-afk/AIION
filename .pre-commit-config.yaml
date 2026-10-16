@@ -65,14 +65,16 @@ repos:
     hooks:
       - id: no-print-in-src
         name: No print statements in src
-        entry: bash -c 'if grep -r "print(" aiion/ --include="*.py" | grep -v "test_" | grep -v "__main__" | grep -v "cli/ui.py" | grep -v "# noqa: T201"; then exit 1; fi'
+        entry: |
+          bash -c 'if grep -r "print(" aiion/ --include="*.py" | grep -v "test_" | grep -v "__main__" | grep -v "cli/ui.py" | grep -v "# noqa: T201"; then exit 1; fi'
         language: system
         types: [python]
         exclude: ^tests/
 
       - id: no-debugger
         name: No debugger statements
-        entry: bash -c 'if grep -r "breakpoint()\|pdb.set_trace()" aiion/ --include="*.py"; then exit 1; fi'
+        entry: |
+          bash -c 'if grep -r "breakpoint()\|pdb.set_trace()" aiion/ --include="*.py"; then exit 1; fi'
         language: system
         types: [python]
         exclude: ^tests/

@@ -8,6 +8,19 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 
 ## [Unreleased]
 
+### Añadido
+- **CI/CD con GitHub Actions**:
+  - `.github/workflows/tests.yml` — pytest en Python 3.10, 3.11, 3.12
+  - `.github/workflows/lint.yml` — Ruff + MyPy + pre-commit hooks
+  - `.github/workflows/security.yml` — pip-audit + Gitleaks + Trivy
+- **`.gitleaks.toml`** — Configuración de escaneo de secretos
+- **Badges de CI/CD y release** en `README.md`
+
+### Cambiado
+- `Makefile`: `make test` ahora ejecuta `pytest tests/ -v` (sin markers inexistentes)
+- `pyproject.toml`: versión actualizada a `0.2.0`
+- `tests/test_db.py`: `test_schema_version_metadata` ya no asume exactamente 2 versiones de schema
+
 ### Planeado
 - Sistema de plugins dinámicos
 - Dashboard web opcional (Flask)

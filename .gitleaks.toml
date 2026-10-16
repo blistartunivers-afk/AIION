@@ -1,0 +1,32 @@
+# AIION — Gitleaks configuration
+# Reglas de detección de secretos adaptadas al proyecto.
+# El repositorio ya no almacena keys reales; aiion_keys.py contiene solo placeholders.
+
+title = "AIION Gitleaks Config"
+
+[extend]
+# Usar reglas base de gitleaks
+useDefault = true
+
+[allowlist]
+# Archivos permitidos (ejemplos, docs, tests con datos ficticios)
+paths = [
+  '''\.git/''',
+  '''\.pytest_cache/''',
+  '''aiion\.egg-info/''',
+  '''\.venv/''',
+  '''tests/''',
+  '''docs/''',
+  '''plans/''',
+  '''README\.md''',
+  '''CONTRIBUTING\.md''',
+  '''CHANGELOG\.md''',
+]
+
+# Regexes permitidas (placeholders intencionales)
+regexes = [
+  '''YOUR_API_KEY_HERE''',
+  '''YOUR_KEY_HERE''',
+  '''sk-xxxxxxxx''',
+  '''example-key''',
+]

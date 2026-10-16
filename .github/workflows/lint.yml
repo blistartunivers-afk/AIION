@@ -1,0 +1,47 @@
+# AIION — Lint & Type Check CI
+# Ejecuta ruff, mypy y pre-commit hooks en cada PR/push.
+name: Lint
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+    branches: [master, main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Ruff + MyPy + Pre-commit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          pip install -e ".[dev]"
+          pip install pre-commit
+
+      - name: Run Ruff linter
+        run: ruff check aiion/ tests/
+
+      - name: Run Ruff formatter check
+        run: ruff format --check aiion/ tests/
+
+      - name: Run MyPy type check
+        run: mypy aiion/ --config-file=pyproject.toml
+
+      - name: Run pre-commit hooks
+        run: pre-commit run --all-files --show-diff-on-failure
