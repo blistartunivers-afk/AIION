@@ -24,7 +24,9 @@ venv/
 env/
 
 # Configuración local y módulos privados
-aiion/config.py
+# NOTA: aiion/config.py ahora se trackea con valores por defecto seguros.
+# Para overrides locales, usa variables de entorno o crea aiion/config_local.py (no trackeado).
+aiion/config_local.py
 aiion/mcp/
 aiion/subagentes/blist_bridge.py
 plans/blistv12.md
