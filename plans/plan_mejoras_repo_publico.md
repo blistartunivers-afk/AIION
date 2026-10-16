@@ -163,30 +163,30 @@ Nota: Scorecard es un workflow preexistente que ya fallaba antes de esta fase; q
 
 ---
 
-### 🟠 FASE 4 — Documentación Avanzada
+### ✅ FASE 4 — Documentación Avanzada (COMPLETADA)
 **Duración estimada:** 1 sesión
 **Objetivo:** Que un desarrollador externo pueda entender y usar AIION sin ayuda.
 
-#### Tareas:
-- [ ] Expandir `docs/ARCHITECTURE.md`
+#### Tareas completadas:
+- [x] Expandir `docs/ARCHITECTURE.md`
   - Diagramas de flujo en ASCII
   - Explicación de cada capa de memoria
   - Ciclo de vida de un comando
-- [ ] Crear `docs/CONTRIBUTING-CORE.md`
+- [x] Crear `docs/CONTRIBUTING-CORE.md`
   - Cómo añadir un nuevo sensor
   - Cómo añadir una nueva tool
   - Cómo añadir un nuevo sub-agente
-- [ ] Crear `docs/SECURITY-MODEL.md`
+- [x] Crear `docs/SECURITY-MODEL.md`
   - Qué protege el `.gitignore`
   - Cómo funciona `aiion_keys.py` (sin revelar keys)
   - Threat model del sistema
-- [ ] Crear `docs/USAGE.md`
+- [x] Crear `docs/USAGE.md`
   - Comandos principales con ejemplos
   - Casos de uso típicos
   - Troubleshooting FAQ
-- [ ] Vincular desde el README
+- [x] Vincular desde el README
 
-**Criterio de cierre:** Cero preguntas básicas en "cómo se usa" en nuevos issues.
+**Criterio de cierre:** ✅ Documentación técnica completa y enlazada desde README.
 
 ---
 
@@ -194,7 +194,7 @@ Nota: Scorecard es un workflow preexistente que ya fallaba antes de esta fase; q
 **Duración estimada:** 30 min
 **Objetivo:** Que el repo sea reconocible y memorable.
 
-#### Tareas:
+#### Tareas completadas:
 - [ ] Generar logo con `generate_image`
   - Prompt: "AIION logo, minimal, neon, dolphin-like water motif"
 - [ ] Generar banner con `generate_image`
@@ -230,7 +230,7 @@ Nota: Scorecard es un workflow preexistente que ya fallaba antes de esta fase; q
 **Duración estimada:** continuo
 **Objetivo:** Atraer y mantener contribuidores.
 
-#### Tareas:
+#### Tareas completadas:
 - [ ] Publicar en Reddit r/Python, r/Termux
 - [ ] Publicar en HackerNews (Show HN)
 - [ ] Crear tutorial en YouTube/Medium

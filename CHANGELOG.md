@@ -28,6 +28,14 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 - Workflow `security.yml`: usa `aquasecurity/trivy-action@v0.36.0`
 - Workflow `lint.yml`: `continue-on-error` mientras se limpian errores preexistentes
 
+### Añadido
+- **Documentación avanzada**:
+  - `docs/USAGE.md` — Guía de instalación, comandos, casos de uso y FAQ
+  - `docs/CONTRIBUTING-CORE.md` — Cómo añadir sensores, tools y sub-agentes
+  - `docs/SECURITY-MODEL.md` — Modelo de amenazas, `.gitignore`, `aiion_keys.py`
+  - `docs/ARCHITECTURE.md` ampliado con diagramas ASCII, capas de memoria y ciclo de vida de un comando
+- Enlaces a la documentación avanzada desde `README.md`
+
 ### Planeado
 - Sistema de plugins dinámicos
 - Dashboard web opcional (Flask)

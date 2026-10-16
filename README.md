@@ -114,10 +114,13 @@ python main.py
 
 | Recurso | Descripción |
 |---------|-------------|
+| [docs/USAGE.md](docs/USAGE.md) | Guía de instalación y uso paso a paso |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Arquitectura interna, flujo de interacción y capas de memoria |
+| [docs/CONTRIBUTING-CORE.md](docs/CONTRIBUTING-CORE.md) | Cómo añadir sensores, tools y sub-agentes |
+| [docs/SECURITY-MODEL.md](docs/SECURITY-MODEL.md) | Modelo de amenazas y protección de datos |
 | [plans/](plans/) | Templates PHVA para proyectos derivados |
-| [docs/](docs/) | Documentación técnica extendida |
 | [CHANGELOG.md](CHANGELOG.md) | Historial de versiones |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | Guía para contribuidores |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Guía general para contribuidores |
 | [LICENSE](LICENSE) | Licencia MIT |
 
 ---
