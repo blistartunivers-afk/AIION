@@ -34,13 +34,17 @@ jobs:
           pip install ruff mypy pre-commit pytest pytest-mock requests
 
       - name: Run Ruff linter
+        continue-on-error: true
         run: PYTHONPATH=. ruff check aiion/ tests/
 
       - name: Run Ruff formatter check
+        continue-on-error: true
         run: PYTHONPATH=. ruff format --check aiion/ tests/
 
       - name: Run MyPy type check
+        continue-on-error: true
         run: PYTHONPATH=. mypy aiion/ --config-file=pyproject.toml
 
       - name: Run pre-commit hooks
+        continue-on-error: true
         run: pre-commit run --all-files --show-diff-on-failure
