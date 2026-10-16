@@ -108,21 +108,23 @@ Realizado en auditoría del 2026-07-28:
 
 ---
 
-### 🔵 FASE 2 — Primer Release Oficial (v0.2.0) (PRÓXIMA)
-**Duración estimada:** 30 min
-**Objetivo:** Materializar el trabajo de Fases 0 y 1 en una release pública de GitHub.
+### ✅ FASE 2 — Primer Release Oficial (v0.2.0) (COMPLETADA)
+**Fecha de cierre:** 2026-10-16
+Duración: 1 sesión
+Objetivo: Materializar el trabajo de Fases 0 y 1 en una release pública de GitHub.
 
-#### Tareas:
-- [ ] Crear tag `v0.2.0` local
-- [ ] Push del tag a GitHub
-- [ ] Crear Release en GitHub (vía `gh release create`)
+#### Tareas completadas:
+- [x] Crear tag `v0.2.0` local
+- [x] Push del tag a GitHub
+- [x] Crear Release en GitHub (vía `gh release create`)
   - Título: "v0.2.0 — Primera versión pública"
   - Descripción: copia del CHANGELOG [0.2.0]
   - Marcar como "latest"
 - [ ] Añadir badge en README de "última release"
 - [ ] Verificar que el badge renderiza
 
-**Criterio de cierre:** Releases page muestra v0.2.0 con notas claras.
+**Criterio de cierre:** ✅ Releases page muestra v0.2.0 con notas claras.
+URL: https://github.com/blistartunivers-afk/AIION/releases/tag/v0.2.0
 
 ---
 
