@@ -1,5 +1,9 @@
 # Arquitectura de AIION v0.2
 
+<p align="center">
+  <img src="../assets/logo.jpg" alt="AIION logo" width="120">
+</p>
+
 > Visión técnica de cómo AIION procesa una interacción, gestiona memoria y ejecuta herramientas.
 
 ---

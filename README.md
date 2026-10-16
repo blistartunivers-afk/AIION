@@ -1,5 +1,9 @@
 # AIION — Agente Autónomo de Ecosistema
 
+<p align="center">
+  <img src="assets/logo.jpg" alt="AIION logo" width="180">
+</p>
+
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![Platform: Termux/Android](https://img.shields.io/badge/platform-Termux%2FAndroid-green.svg)](https://termux.dev/)
@@ -7,7 +11,7 @@
 [![Tests](https://github.com/blistartunivers-afk/AIION/actions/workflows/tests.yml/badge.svg)](https://github.com/blistartunivers-afk/AIION/actions/workflows/tests.yml)
 [![Lint](https://github.com/blistartunivers-afk/AIION/actions/workflows/lint.yml/badge.svg)](https://github.com/blistartunivers-afk/AIION/actions/workflows/lint.yml)
 [![Security](https://github.com/blistartunivers-afk/AIION/actions/workflows/security.yml/badge.svg)](https://github.com/blistartunivers-afk/AIION/actions/workflows/security.yml)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](docs/CONTRIBUTING-CORE.md)
 
 > Agente autónomo modular para Android/Termux con sensores nativos, memoria cognitiva y arquitectura de sub-agentes.
 

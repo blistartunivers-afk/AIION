@@ -39,6 +39,12 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/lang/es/).
 ### Cambiado
 - Licencia actualizada de **MIT → Apache 2.0**: mantiene el carácter open source y permisivo, añade protección de patentes y preserva la atribución del autor
 
+### Añadido
+- **Identidad visual**:
+  - Logo generado en `assets/logo.jpg`
+  - Logo integrado en `README.md` y `docs/ARCHITECTURE.md`
+  - Badge de PRs apunta a `docs/CONTRIBUTING-CORE.md`
+
 ### Planeado
 - Sistema de plugins dinámicos
 - Dashboard web opcional (Flask)

@@ -190,22 +190,22 @@ Nota: Scorecard es un workflow preexistente que ya fallaba antes de esta fase; q
 
 ---
 
-### 🔴 FASE 5 — Identidad Visual
-**Duración estimada:** 30 min
+### ✅ FASE 5 — Identidad Visual (COMPLETADA)
+**Fecha de cierre:** 2026-10-16
+Duración: 30 min
 **Objetivo:** Que el repo sea reconocible y memorable.
 
 #### Tareas completadas:
-- [ ] Generar logo con `generate_image`
-  - Prompt: "AIION logo, minimal, neon, dolphin-like water motif"
-- [ ] Generar banner con `generate_image`
-  - Prompt: "AIION banner 1200x400, futuristic, ecosystem"
-- [ ] Crear carpeta `assets/`
-- [ ] Insertar logo en README (header)
-- [ ] Insertar banner en `docs/ARCHITECTURE.md`
-- [ ] Configurar repo social preview
-  - GitHub Settings → Social preview → upload imagen
+- [x] Generar logo con `generate_image`
+  - Prompt: minimalista, nodo neural geométrico, gradiente cian/púrpura sobre fondo oscuro
+- [x] Generar banner/logo cuadrado (se usa el mismo logo como identidad principal)
+- [x] Crear carpeta `assets/`
+- [x] Insertar logo en README (header)
+- [x] Insertar logo en `docs/ARCHITECTURE.md`
+- [x] Configurar repo social preview
+  - GitHub Settings → Social preview → upload `assets/logo.jpg`
 
-**Criterio de cierre:** Repo tiene identidad visual única.
+**Criterio de cierre:** ✅ Repo tiene identidad visual única con logo en README y docs.
 
 ---
 
