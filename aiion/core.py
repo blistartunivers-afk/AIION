@@ -24,6 +24,16 @@ from aiion.llm.keys import STATE, load_api_keys, current_key
 from aiion.llm.client import chat_native, chat_react_text, parse_react, TOOL_CALL_STATE
 from aiion.tools.registry import TOOLS, TOOL_MAP, DANGEROUS_TOOLS, execute_tool, ask_permission
 from aiion.core_modules.mythos_engine import MYTHOS
+from aiion.core_modules.langgraph_integration import (
+    AgentState,
+    SQLiteCheckpointer,
+    MemoryCheckpointer,
+    build_aiion_graph,
+    run_graph_sync,
+    run_graph_stream,
+    create_initial_state,
+    CompiledGraph,
+)
 
 def status_bar():
     """Barra de estado en vivo: RAM | Sensores | Voz | Modelo"""
@@ -106,6 +116,9 @@ def _print_final(final_response, step):
     print(c(PU,'╚'+'═'*50)+"\n")
 
 def run_agent(user_input, history):
+    """Ejecuta el agente usando el grafo LangGraph con checkpoints y streaming."""
+    global _GRAPH
+    
     # === MYTHOS ENGINE: Análisis pre-ejecución visible ===
     mythos_analysis = MYTHOS.analyze(user_input)
     if mythos_analysis.caution:
@@ -114,6 +127,51 @@ def run_agent(user_input, history):
         emotions = ", ".join(mythos_analysis.metadata["detected_emotions"])
         print(f"  {c(CY,'💭 Pathos:')} {c(CO, emotions)} | Intent: {c(GR, mythos_analysis.intent)}")
     
+    t_run_inicio = time.time()
+    
+    # Determinar modo de tool calling para metadata
+    tool_mode = "native" if TOOL_CALL_STATE.get("native", False) else "react"
+    
+    try:
+        # Ejecutar grafo sincrónicamente
+        final_state = run_graph_sync(
+            graph=_GRAPH,
+            user_input=user_input,
+            history=history[-20:],
+            max_steps=MAX_ITER,
+        )
+        
+        # Extraer respuesta final
+        final_response = final_state.get("final_response", "")
+        steps = final_state.get("current_step", 0)
+        status = final_state.get("status", "unknown")
+        
+        if final_response:
+            _print_final(final_response, steps)
+            print(c(GR,f"✅ Listo en {steps} pasos · {time.time()-t_run_inicio:.1f}s · Status: {status}"))
+            history_save(user_input, final_response)
+            notify_response(final_response, steps=steps)
+            speak(final_response, blocking=False)
+        elif status == "error":
+            error = final_state.get("error", "Error desconocido")
+            print(c(RE, f"\n  ✗ Error: {error}"))
+        elif status == "awaiting_human":
+            print(c(YL, f"\n  ⏸ Esperando confirmación humana: {final_state.get('interrupt_reason', '')}"))
+        else:
+            print(c(YL, f"\n  ⚠ Límite de {MAX_ITER} pasos alcanzado sin respuesta final."))
+        
+        # Retornar mensajes para mantener compatibilidad con historial
+        return final_state.get("messages", [])
+        
+    except Exception as ex:
+        print(c(RE, f"\n  ✗ Error ejecutando grafo: {ex}"))
+        # Fallback al modo legacy si falla el grafo
+        print(c(YL, "  ⚠ Degradando a modo legacy..."))
+        return _run_agent_legacy(user_input, history)
+
+
+def _run_agent_legacy(user_input, history):
+    """Modo legacy (loop manual) como fallback."""
     messages     = [{"role":"system","content":build_system_prompt(user_input)}]
     messages    += history
     messages.append({"role":"user","content":user_input})
@@ -161,7 +219,7 @@ def run_agent(user_input, history):
                         print(c(CO,f"  {'─'*48}"))
                     # Respuesta de tool en formato Ollama
                     messages.append({"role":"tool","content":obs,
-                                     "tool_call_id": call_id, "name": fn_name})
+                                      "tool_call_id": call_id, "name": fn_name})
 
             else:  # kind == "text" → respuesta final
                 final_response = data.strip()
@@ -237,6 +295,7 @@ def run_agent(user_input, history):
     if not final_response:
         print(c(YL,f"\n  ⚠ Límite {MAX_ITER} pasos alcanzado.\n"))
     return messages
+
 
 def get_local_models():
     try:
@@ -770,7 +829,7 @@ def create_plan(name="nuevo_plan"):
 
 def print_status():
     """Resumen ejecutivo del estado de AIION v0.2"""
-    print(f"\n{c(CY+BOLD,'╔══ 🧠 AIION STATUS ════════════════════════════════╗')}")
+    print(f"\n{c(CY+BOLD,'╔══ 🧠 AIION STATUS ═════════════════════════════════╗')}")
     
     # Modelo
     modo = c(CY+BOLD, f"NUBE | {STATE['model']} ({len(STATE['api_keys'])} keys)") \
@@ -809,6 +868,7 @@ def print_status():
     
     print(f"{c(PU,'╚═════════════════════════════════════════════════╝')}\n")
 
+
 def print_help():
     print(f"""
 {c(PU+BOLD,'╔══ Comandos ═══════════════════════════════════════╗')}
@@ -838,6 +898,7 @@ def print_help():
 {c(PU,'╚═══════════════════════════════════════════════════╝')}
 """)
 
+
 def print_sensors_status():
     if not SENSOR_STATE["running"]:
         print(c(YL,"  Sensores no activos")); return
@@ -863,6 +924,7 @@ def print_sensors_status():
             print(f"{c(PU,'║')}  {c(CO,'○')} {c(CO,f'{sensor:<18}')} {c(CO,'sin datos aún')}")
     print(c(PU,'╚'+'═'*50))
     print()
+
 
 def handle_voice_command(cmd):
     cmd=cmd.strip().lower()
@@ -897,6 +959,7 @@ def handle_voice_command(cmd):
         print(f"  Voces: {c(GR,', '.join(VOICES))}\n"); return True
     return False
 
+
 def main():
     select_mode()
     RAMGUARD.start()
@@ -905,6 +968,33 @@ def main():
     # Activar wake lock
     subprocess.Popen("termux-wake-lock 2>/dev/null",shell=True,
                      stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+
+    # ── Construir grafo LangGraph ─────────────────────────────────────────────
+    checkpointer = SQLiteCheckpointer()
+    global _GRAPH
+    _GRAPH = build_aiion_graph(
+        build_system_prompt_fn=build_system_prompt,
+        chat_native_fn=chat_native,
+        chat_react_text_fn=chat_react_text,
+        parse_react_fn=parse_react,
+        execute_tool_fn=execute_tool,
+        tool_map=TOOL_MAP,
+        tool_call_state=TOOL_CALL_STATE,
+        max_iter=MAX_ITER,
+        ram_guard=RAMGUARD,
+        sensor_last_fn=sensor_last,
+        memory_load_fn=memory_load,
+        history_summary_fn=history_summary_for_prompt,
+        cogindex=COGINDEX,
+        mythos=MYTHOS,
+        state_dict=STATE,
+        voice_state=VOICE_STATE,
+        speak_fn=speak,
+        notify_fn=notify_response,
+        history_save_fn=history_save,
+        checkpointer=checkpointer,
+    )
+    print(c(GR, "  ✓ Grafo LangGraph compilado con SQLite checkpointer"))
 
     os.system("clear")
     print(BANNER)
@@ -1043,4 +1133,3 @@ def main():
         else:
             print()
             history=run_agent(user_input,history[-20:])
-
