@@ -9,8 +9,8 @@ def tool_leer_sms(limit=5, type="all"):
     return json.dumps(d,indent=2,ensure_ascii=False) if d else "Error: no se pudo leer SMS"
 
 def tool_enviar_sms(number, message):
-    r=subprocess.run(f"termux-sms-send -n '{number}' '{message}'",
-                     shell=True,capture_output=True,text=True,timeout=15)
+    r=subprocess.run(["termux-sms-send", "-n", str(number), str(message)],
+                     capture_output=True,text=True,timeout=15)
     return f"OK: SMS enviado a {number}" if r.returncode==0 else f"Error: {r.stderr.strip()}"
 
 def tool_historial_llamadas(limit=10):
@@ -18,7 +18,7 @@ def tool_historial_llamadas(limit=10):
     return json.dumps(d,indent=2,ensure_ascii=False) if d else "Error: no se pudo leer historial"
 
 def tool_hacer_llamada(number):
-    r=subprocess.run(f"termux-telephony-call {number}",shell=True,capture_output=True,text=True,timeout=10)
+    r=subprocess.run(["termux-telephony-call", str(number)],capture_output=True,text=True,timeout=10)
     return f"OK: Llamando a {number}" if r.returncode==0 else f"Error: {r.stderr.strip()}"
 
 def tool_info_telefonia():

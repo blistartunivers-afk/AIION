@@ -1,5 +1,5 @@
 """aiion/sensors/collectors.py — Recolectores individuales vía termux-api + almacenamiento SQLite."""
-import json, subprocess, threading
+import json, subprocess, threading, shlex
 from datetime import datetime
 from aiion.config import SENSOR_DB
 from aiion.db import init_db, execute, query
@@ -28,7 +28,7 @@ def _sensor_save(sensor, data):
         )
         # Retención 3 días (idempotente)
         execute(
-            "DELETE FROM readings WHERE ts < datetime('now','-3 days')",
+            "DELETE FROM readings WHERE datetime(ts) < datetime('now','localtime','-3 days')",
             (),
             SENSOR_DB,
         )
@@ -41,7 +41,8 @@ def _sensor_save(sensor, data):
 
 def _termux(cmd, timeout=10):
     try:
-        r=subprocess.run(cmd,shell=True,capture_output=True,text=True,timeout=timeout)
+        r=subprocess.run(shlex.split(cmd) if isinstance(cmd, str) else cmd,
+                         capture_output=True,text=True,timeout=timeout)
         if r.returncode==0 and r.stdout.strip():
             return json.loads(r.stdout.strip())
     except: pass

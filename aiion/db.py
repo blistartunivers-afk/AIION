@@ -35,7 +35,8 @@ def get_conn(db_path: Path | None = None) -> sqlite3.Connection:
     if conn is None:
         conn = {}
         _TLS.conns = conn
-    if db_path not in conn:
+    db_path = Path(db_path).expanduser().resolve()
+    if str(db_path) not in conn:
         db_path.parent.mkdir(parents=True, exist_ok=True)
         c = sqlite3.connect(
             str(db_path),

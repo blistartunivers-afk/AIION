@@ -25,20 +25,21 @@ jobs:
       id-token: write
     steps:
       - name: "Checkout code"
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
 
       - name: "Run Scorecard"
-        uses: ossf/scorecard-action@v2.3.1
+        uses: ossf/scorecard-action@fa7117db83c52d787ae5a89f350999701505d78e # v2.5.0
         with:
           results_file: results.sarif
           results_format: sarif
-          publish_results: true
+          publish_results: ${{ github.event_name != 'pull_request' }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: "Upload SARIF results to GitHub Security tab"
-        uses: github/codeql-action/upload-sarif@v3
+        if: github.event_name != 'pull_request'
+        uses: github/codeql-action/upload-sarif@9418214df1f2c4b8128c770156c409013b07d6b9 # v3
         with:
           sarif_file: results.sarif
           category: scorecard
@@ -47,7 +48,7 @@ jobs:
         if: always()
         run: |
           if [ -f results.sarif ]; then
-            CRITICAL=$(jq '.runs[0].results[] | select(.level == "error") | length' results.sarif 2>/dev/null || echo 0)
+            CRITICAL=$(jq '[.runs[].results[]? | select(.level == "error")] | length' results.sarif)
             if [ "$CRITICAL" -gt 0 ]; then
               echo "::error::Scorecard found $CRITICAL critical findings"
               exit 1

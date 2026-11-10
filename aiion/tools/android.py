@@ -30,8 +30,8 @@ def tool_take_photo(camera_id=0, filename=""):
     try:
         fn=filename or f"~/foto_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
         fn=str(Path(fn).expanduser())
-        r=subprocess.run(f"termux-camera-photo -c {camera_id} {fn}",
-                         shell=True,capture_output=True,text=True,timeout=15)
+        r=subprocess.run(["termux-camera-photo", "-c", str(camera_id), fn],
+                         capture_output=True,text=True,timeout=15)
         if r.returncode==0 and Path(fn).exists():
             size=Path(fn).stat().st_size
             return f"OK: Foto guardada en {fn} ({size} bytes)"
@@ -48,12 +48,12 @@ def tool_get_gps(provider="network"):
     return json.dumps(d,indent=2,ensure_ascii=False) if d else "Error: no se pudo obtener ubicación"
 
 def tool_notificacion(title, content, id=1234):
-    r=subprocess.run(f"termux-notification --title '{title}' --content '{content}' --id {id}",
-                     shell=True,capture_output=True,text=True,timeout=8)
+    r=subprocess.run(["termux-notification", "--title", str(title), "--content", str(content), "--id", str(id)],
+                     capture_output=True,text=True,timeout=8)
     return "OK: Notificación enviada" if r.returncode==0 else f"Error: {r.stderr.strip()}"
 
 def tool_cancelar_notificacion(id):
-    r=subprocess.run(f"termux-notification-remove {id}",shell=True,capture_output=True,text=True,timeout=5)
+    r=subprocess.run(["termux-notification-remove", str(id)],capture_output=True,text=True,timeout=5)
     return f"OK: Notificación {id} cancelada" if r.returncode==0 else f"Error: {r.stderr.strip()}"
 
 

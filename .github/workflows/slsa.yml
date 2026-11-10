@@ -1,48 +1,28 @@
-# SLSA (Supply-chain Levels for Software Artifacts) verification
-# Generates provenance for releases
-name: "SLSA Provenance"
+name: Source Archive Provenance
 on:
   release:
     types: [published]
   workflow_dispatch:
 permissions:
   contents: read
-  id-token: write
-  attestations: write
 jobs:
-  build:
-    name: Build and generate provenance
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v1.9.0
-    with:
-      # Base64-encoded build script
-      build_script: |
-        echo "Building BLIST project..."
-        # Add your build steps here
-        # npm ci && npm run build
-      # Artifacts to upload
-      artifacts: dist/**
-    secrets:
-      # Required for provenance signing
-      registry-username: ${{ secrets.REGISTRY_USERNAME }}
-      registry-password: ${{ secrets.REGISTRY_PASSWORD }}
-
-  verify:
-    name: Verify provenance
-    needs: build
+  attest:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write
-      attestations: read
+      attestations: write
     steps:
-      - name: "Download provenance"
-        uses: actions/download-artifact@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          name: provenance
-          path: provenance
-
-      - name: "Verify with slsa-verifier"
-        uses: slsa-framework/slsa-verifier/action@v2.3.0
+          persist-credentials: false
+      - name: Create source archive from checked-out commit
+        run: git archive --format=tar.gz --output=source.tar.gz HEAD
+      - uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2
         with:
-          provenance: provenance/*.intoto.jsonl
-          source-uri: github.com/blistartunivers-afk/${{ github.event.repository.name }}
+          subject-path: source.tar.gz
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: source-with-provenance
+          path: source.tar.gz
+          if-no-files-found: error

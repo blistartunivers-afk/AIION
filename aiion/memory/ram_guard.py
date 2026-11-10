@@ -95,17 +95,16 @@ class RamGuard:
         except: pass
 
     def _kill_zombies(self):
+        """Reap terminated children; never kill unrelated Node processes."""
         try:
-            r=subprocess.run("ps aux|grep '[n]ode'|awk '{print $1}'",
-                             shell=True,capture_output=True,text=True,timeout=5)
-            my=str(os.getpid())
-            for pid in r.stdout.strip().split():
-                if pid!=my:
-                    subprocess.run(f"kill -9 {pid}",shell=True,
-                                   stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
-                    self._actions+=1
-        except: pass
-    
+            while True:
+                pid, _ = os.waitpid(-1, os.WNOHANG)
+                if pid == 0:
+                    break
+                self._actions += 1
+        except ChildProcessError:
+            pass
+
     def get_stats(self):
         try:
             import psutil

@@ -1,5 +1,6 @@
 """aiion/llm/kalman.py — Kalman filter for model selection."""
 import os
+import sys
 import threading
 import time
 import sqlite3

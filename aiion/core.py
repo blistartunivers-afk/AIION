@@ -497,9 +497,9 @@ def do_backup(action="create"):
         if src_data.exists():
             import shutil
             dest_data = AIION_HOME
-            if dest_data.exists():
-                shutil.rmtree(dest_data)
-            shutil.copytree(src_data, dest_data)
+            # The backup itself lives under data/backups: deleting data would
+            # destroy the only restore source. Merge without deleting backups.
+            shutil.copytree(src_data, dest_data, dirs_exist_ok=True)
             print(c(GR, f"  ✓ data/ restaurado"))
         print(c(GR+BOLD, f"\n  ✅ Restauración completa.\n"))
         return
@@ -591,8 +591,8 @@ def system_doctor():
     try:
         import subprocess
         r = subprocess.run(["python3", "-m", "pytest", "tests/", "-q", "--no-header"],
-                          capture_output=True, text=True, timeout=30, cwd=str(AIION_HOME))
-        passed = "passed" in r.stdout
+                          capture_output=True, text=True, timeout=30, cwd=str(Path(__file__).resolve().parents[1]))
+        passed = r.returncode == 0
         # Extraer número de tests pasados
         import re
         m = re.search(r'(\d+)\s+passed', r.stdout)
