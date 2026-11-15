@@ -4,7 +4,7 @@ from pathlib import Path
 from datetime import datetime
 
 import pytest
-from aiion.config import AIION_HOME, MAX_ITER, VERSION, OLLAMA_LOCAL, OLLAMA_CLOUD, PREFERRED_MODELS
+from aiion.config import AIION_HOME, MAX_ITER, VERSION, OLLAMA_LOCAL, OLLAMA_CLOUD, PREFERRED_MODELS, GEMINI_MODELS
 from aiion.cli.ui import (
     c, hr, badge, BANNER, R, BOLD, DIM, ITALIC,
     CY, GR, YL, OR, RE, PK, PU, CO, D_FG,
@@ -20,7 +20,7 @@ from aiion.sensors.collectors import SENSOR_STATE, SENSOR_INTERVALS
 from aiion.voice.tts import speak, VOICE_STATE
 from aiion.voice.stt import listen
 from aiion.config import VOICES
-from aiion.llm.keys import STATE, load_api_keys, current_key
+from aiion.llm.keys import STATE, load_api_keys, load_gemini_keys, current_key
 from aiion.llm.client import chat_native, chat_react_text, parse_react, TOOL_CALL_STATE
 from aiion.tools.registry import TOOLS, TOOL_MAP, DANGEROUS_TOOLS, execute_tool, ask_permission
 from aiion.core_modules.mythos_engine import MYTHOS
@@ -61,6 +61,15 @@ def build_system_prompt(user_input=""):
         if d: sens_parts.append(f"  {s}: {json.dumps(d,ensure_ascii=False)[:150]}")
     sens_block=("\nESTADO SENSORIAL EN TIEMPO REAL:\n"+"\n".join(sens_parts)+"\n") if sens_parts else ""
     keys_info=f"Pool {len(STATE['api_keys'])} keys" if STATE["use_cloud"] else "Local"
+    tool_protocol = (
+        "\nUsa las herramientas estructuradas disponibles cuando necesites actuar. "
+        "Después de recibir sus resultados, responde al usuario en español.\n"
+        if TOOL_CALL_STATE["native"] else
+        "\n\n════════ PROTOCOLO REACT ════════\n"
+        "Para usar herramienta:\nPensamiento: [razón]\nAccion: nombre_tool\n"
+        "Parametros: {\"key\": \"val\"}\n\n"
+        "Para respuesta final:\nRespuesta: [texto en español]\n\n"
+    )
     
     # === MYTHOS ENGINE: Análisis de 3 capas ===
     mythos_analysis = MYTHOS.analyze(user_input) if user_input else None
@@ -75,14 +84,7 @@ def build_system_prompt(user_input=""):
         f"HOME: {home} | CWD: {cwd}\n"
         "IMPORTANTE: En Termux el home es /data/data/com.termux/files/home\n"
         +mem_block+hist_block+cog_block+sens_block+mythos_block+
-        "\nHERRAMIENTAS:\n"+tools_desc+
-        "\n\n════════ PROTOCOLO REACT ════════\n"
-        "Para usar herramienta:\n"
-        "Pensamiento: [razón]\n"
-        "Accion: nombre_tool\n"
-        "Parametros: {\"key\": \"val\"}\n\n"
-        "Para respuesta final:\n"
-        "Respuesta: [texto en español]\n\n"
+        "\nHERRAMIENTAS:\n"+tools_desc+tool_protocol+
         "════════ REGLAS ════════\n"
         "✅ Lee archivo ANTES de editar\n"
         "✅ Usa replace para cambios pequeños\n"
@@ -335,12 +337,30 @@ def select_mode():
     print(BANNER)
     print(f"  {c(GR+BOLD,'1.')} {c(GR,'Local')}  — Modelos en Android")
     print(f"  {c(CY+BOLD,'2.')} {c(CY,'Nube ')}  — Ollama Cloud + pool de API keys\n")
+    print(f"  {c(PK+BOLD,'3.')} {c(PK,'Gemini')} — Google Gemini + pool de API keys\n")
     while True:
-        try: choice=input(c(PU+BOLD,"  ▸ Elige modo [1/2]: ")).strip()
+        try: choice=input(c(PU+BOLD,"  ▸ Elige modo [1/2/3, Enter=Gemini]: ")).strip()
         except (KeyboardInterrupt,EOFError): sys.exit(0)
+        if not choice and load_gemini_keys(): return _setup_gemini()
         if choice=="1": return _setup_local()
         if choice=="2": return _setup_cloud()
-        print(c(RE,"  Escribe 1 o 2"))
+        if choice=="3": return _setup_gemini()
+        print(c(RE,"  Escribe 1, 2 o 3"))
+
+
+def _setup_gemini():
+    keys = load_gemini_keys()
+    if not keys:
+        print(c(RE, "  No hay claves de Gemini en GEMINI_API_KEY, gemini_keys o .blist_keys."))
+        return select_mode()
+    print(c(GR, f"  {len(keys)} clave(s) de Gemini disponibles."))
+    print(f"  Modelos: {', '.join(GEMINI_MODELS)}")
+    try:
+        choice = input(c(PU+BOLD, "  ▸ Modelo [Enter=predeterminado o nombre]: ")).strip()
+    except (KeyboardInterrupt, EOFError):
+        sys.exit(0)
+    STATE.update(api_keys=keys, key_index=0, use_cloud=True,
+                 provider="gemini", model=choice or GEMINI_MODELS[0])
 
 def _setup_local():
     models=get_local_models()
@@ -355,6 +375,7 @@ def _setup_local():
             idx=int(input(c(PU+BOLD,"  ▸ Elige modelo [número]: ")).strip())-1
             if 0<=idx<len(models):
                 STATE["model"]=models[idx]; STATE["use_cloud"]=False; STATE["api_keys"]=[]
+                STATE["provider"]="ollama_local"
                 return
         except (ValueError,KeyboardInterrupt,EOFError): sys.exit(0)
 
@@ -374,7 +395,7 @@ def _setup_cloud():
         if keys and input(c(CO,"  ▸ Guardar en ~/AIION/data/ollama_keys? [S/n]: ")).strip().lower() not in("n","no"):
             kf=AIION_HOME/"ollama_keys"; kf.write_text("\n".join(keys)); kf.chmod(0o600)
     if not keys: return _setup_local()
-    STATE.update(api_keys=keys,key_index=0,use_cloud=True)
+    STATE.update(api_keys=keys,key_index=0,use_cloud=True,provider="ollama")
     print(c(CO,"  Verificando modelos..."))
     models=get_cloud_models(current_key())
     if not models:

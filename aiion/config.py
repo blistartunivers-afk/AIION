@@ -20,6 +20,8 @@ MAX_ITER = 1000
 # ─── Ollama endpoints ───
 OLLAMA_LOCAL = os.getenv("OLLAMA_LOCAL", "http://127.0.0.1:11434")
 OLLAMA_CLOUD = os.getenv("OLLAMA_CLOUD", "https://ollama.com")
+GEMINI_API = os.getenv("GEMINI_API", "https://generativelanguage.googleapis.com/v1beta/models")
+GEMINI_MODELS = ["gemini-2.5-flash", "gemini-3.5-flash-lite", "gemini-2.0-flash", "gemini-2.5-pro"]
 
 # ─── Modelos preferidos (orden de prioridad) ───
 PREFERRED_MODELS = [

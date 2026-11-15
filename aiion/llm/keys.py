@@ -4,7 +4,7 @@ import threading
 import time
 from collections import defaultdict
 from pathlib import Path
-from aiion.config import AIION_HOME, PREFERRED_MODELS
+from aiion.config import AIION_HOME, PREFERRED_MODELS, GEMINI_MODELS
 from aiion.db import init_db
 from aiion.cli.ui import c, YL, N_GREEN, N_YELLOW, N_RED, N_BLUE, N_WHITE, N_DIM, N_ORANGE
 
@@ -27,7 +27,8 @@ _KEY_LOCK = threading.RLock()
 
 
 def _key_candidates():
-    return list(dict.fromkeys([STATE["model"]] + PREFERRED_MODELS))
+    models = GEMINI_MODELS if STATE["provider"] == "gemini" else PREFERRED_MODELS
+    return list(dict.fromkeys([STATE["model"]] + models))
 
 
 def record_key_failure(status: int, retry_after: float = 0.0) -> None:
@@ -232,6 +233,41 @@ def load_api_keys():
                 keys.append(key)
         return keys
     return []
+
+
+def load_gemini_keys():
+    """Carga claves Google de entorno, archivo AIION o pool compartido."""
+    result = []
+    env = os.environ.get("GEMINI_API_KEY", "")
+    for value in env.split(","):
+        value = value.strip()
+        if value and value not in result:
+            result.append(value)
+    own = AIION_HOME / "gemini_keys"
+    if own.exists():
+        for raw in own.read_text().splitlines():
+            value = raw.strip()
+            if value and not value.startswith("#") and value not in result:
+                result.append(value)
+    if result:
+        return result
+    shared = Path.home() / ".blist_keys"
+    if shared.exists():
+        for raw in shared.read_text().splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "|" in line:
+                provider, value, *_ = (part.strip() for part in line.split("|"))
+                if provider.lower() not in ("gemini", "google"):
+                    continue
+            elif line.startswith(("AIza", "AQ.")):
+                value = line
+            else:
+                continue
+            if value and value not in result:
+                result.append(value)
+    return result
 
 def current_key():
     """Devuelve la key actual según el índice."""
