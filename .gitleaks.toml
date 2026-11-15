@@ -9,18 +9,12 @@ title = "AIION Gitleaks Config"
 useDefault = true
 
 [allowlist]
-# Archivos permitidos (ejemplos, docs, tests con datos ficticios)
+# Solo se excluyen archivos generados; los ejemplos también se inspeccionan.
 paths = [
   '''\.git/''',
   '''\.pytest_cache/''',
   '''aiion\.egg-info/''',
   '''\.venv/''',
-  '''tests/''',
-  '''docs/''',
-  '''plans/''',
-  '''README\.md''',
-  '''CONTRIBUTING\.md''',
-  '''CHANGELOG\.md''',
 ]
 
 # Regexes permitidas (placeholders intencionales)

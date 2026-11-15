@@ -1,11 +1,25 @@
 # Datos sensibles y llaves
 aiion_keys.py
-data/ollama_keys
-data/ollama_keys_cache.json
-data/aiion_sensor_data.db
+**/gemini_keys
+**/ollama_keys
+**/ollama_key
+**/ollama_keys_cache.json
+**/.blist_keys
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.sample
+**/*service-account*.json
+**/*credentials*.json
+**/*secret*.json
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
 
 # Backups y archivos temporales
 *.bak
+*.bak.*
 __pycache__/
 *.pyc
 .pytest_cache/
@@ -16,10 +30,18 @@ data/access_log.txt
 data/aiion_history.jsonl
 data/aiion_memory.md
 data/backups/
+**/*.db
+**/*.db-*
+**/*.sqlite
+**/*.sqlite3
+**/*.sqlite-*
+**/*.sqlite3-*
+**/*.log
+**/*.log.*
+**/backups/
 
 # Entorno virtual y dependencias
 venv/
-.env
 .venv
 env/
 
@@ -31,7 +53,3 @@ aiion/mcp/
 aiion/subagentes/blist_bridge.py
 plans/blistv12.md
 tests/mcp_integration_test.py
-
-# Backups de herramientas de edicion
-*.bak
-*.bak.*
