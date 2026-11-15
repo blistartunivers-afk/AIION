@@ -3,10 +3,10 @@ import os
 import sys
 import threading
 import time
-import sqlite3
 from collections import defaultdict
 from pathlib import Path
 from aiion.config import AIION_HOME
+from aiion.db import init_db
 from aiion.cli.ui import c, N_GREEN, N_YELLOW, N_RED, N_BLUE, N_WHITE, N_DIM, N_ORANGE
 
 # ── Evolución DB ────────────────────────────────────────────────────────
@@ -62,7 +62,7 @@ class KalmanModelSelector:
     def _init_from_db(self):
         """Inicializa el estado desde los últimos 5 días en evolution.db."""
         try:
-            con = sqlite3.connect(str(EVOLUTION_DB), timeout=5.0)
+            con = init_db(EVOLUTION_DB)
             five_days_ago = time.time() - (5 * 24 * 3600)
             cursor = con.cursor()
             cursor.execute("SELECT prov_id, model, success, latency_ms FROM model_performance WHERE ts > ?", (five_days_ago,))
@@ -70,11 +70,6 @@ class KalmanModelSelector:
                 self._apply_observation(prov, model, bool(succ), lat)
         except Exception as _e_silent:
             _log_silent_error("main", _e_silent)
-        finally:
-            try:
-                con.close()
-            except Exception:
-                pass
 
     def _apply_observation(self, prov_id, model, success, latency_ms):
         """Lógica interna de actualización Kalman (sin DB)."""
@@ -98,17 +93,12 @@ class KalmanModelSelector:
         """
         # 1. Persistir
         try:
-            con = sqlite3.connect(str(EVOLUTION_DB), timeout=5.0)
+            con = init_db(EVOLUTION_DB)
             con.execute("INSERT INTO model_performance VALUES (?,?,?,?,?)",
                         (prov_id, model, int(success), latency_ms, time.time()))
             con.commit()
         except Exception as _e_silent:
             _log_silent_error("main", _e_silent)
-        finally:
-            try:
-                con.close()
-            except Exception:
-                pass
 
         # 2. Actualizar estado
         with self._lock:

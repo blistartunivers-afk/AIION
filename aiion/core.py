@@ -139,6 +139,7 @@ def run_agent(user_input, history):
             user_input=user_input,
             history=history[-20:],
             max_steps=MAX_ITER,
+            metadata={"tool_mode": tool_mode},
         )
         
         # Extraer respuesta final

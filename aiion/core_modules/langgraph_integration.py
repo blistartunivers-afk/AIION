@@ -488,7 +488,7 @@ class CompiledGraph:
             # Determinar siguiente nodo
             current_node = self._get_next_node(current_node, state)
         
-        if step >= max_steps:
+        if step >= max_steps and current_node and current_node != "__end__" and state.get("status") == "running":
             state["status"] = "error"
             state["error"] = f"Límite de {max_steps} pasos alcanzado"
         
@@ -687,6 +687,10 @@ def create_aiion_nodes(
             return state
         
         if kind == "tool_call":
+            if not data:
+                state["status"] = "error"
+                state["error"] = "El modelo solicitó herramientas sin indicar ninguna"
+                return state
             # El modelo quiere llamar tools
             tool_calls = raw_msg.get("tool_calls", [])
             state["tool_calls"] = tool_calls
@@ -699,7 +703,11 @@ def create_aiion_nodes(
             return state
         else:
             # Respuesta final
-            state["final_response"] = data.strip()
+            state["final_response"] = (data or "").strip()
+            if not state["final_response"]:
+                state["status"] = "error"
+                state["error"] = "El modelo devolvió una respuesta vacía"
+                return state
             state["status"] = "completed"
             return state
     
@@ -714,6 +722,10 @@ def create_aiion_nodes(
             return state
         
         state["messages"].append({"role": "assistant", "content": raw})
+        if not (raw or "").strip():
+            state["status"] = "error"
+            state["error"] = "El modelo devolvió una respuesta vacía"
+            return state
         parsed = parse_react_fn(raw)
         
         if parsed[0] == "action":
@@ -724,7 +736,11 @@ def create_aiion_nodes(
             state["thoughts"].append(thought or "")
             return state
         elif parsed[0] == "final":
-            state["final_response"] = parsed[1]
+            state["final_response"] = (parsed[1] or "").strip()
+            if not state["final_response"]:
+                state["status"] = "error"
+                state["error"] = "El modelo devolvió una respuesta vacía"
+                return state
             state["status"] = "completed"
             return state
         
@@ -782,17 +798,9 @@ def create_aiion_nodes(
         return state
     
     def node_finalize(state: AgentState) -> AgentState:
-        """Nodo final: guarda historial, notifica, TTS"""
-        user_input = state.get("user_input", "")
-        final_response = state.get("final_response", "")
-        
-        if final_response:
-            history_save_fn(user_input, final_response)
-            notify_fn(final_response, steps=state.get("current_step", 0))
-            if voice_state.get("enabled"):
-                speak_fn(final_response, blocking=False)
-        
-        state["status"] = "completed"
+        """Nodo final: entrega el resultado al orquestador para su presentación."""
+        if state.get("status") == "running":
+            state["status"] = "completed"
         return state
     
     def node_human_interrupt(state: AgentState) -> AgentState:
@@ -823,12 +831,7 @@ def create_aiion_nodes(
 def route_after_llm(state: AgentState) -> str:
     """Routing después del LLM: tool_call -> execute_tools, final -> finalize"""
     if state.get("tool_calls"):
-        # Verificar si alguna tool requiere confirmación (dangerous)
-        for tc in state["tool_calls"]:
-            fn_name = tc.get("function", {}).get("name", "")
-            # Aquí se podría integrar con DANGEROUS_TOOLS
-            if fn_name in ("run_shell_command", "write_file", "replace", "enviar_sms", "hacer_llamada"):
-                return "human_interrupt"
+        # execute_tool_fn solicita permiso antes de cualquier acción sensible.
         return "execute_tools"
     elif state.get("final_response"):
         return "finalize"
@@ -841,7 +844,7 @@ def route_after_tools(state: AgentState) -> str:
     """Routing después de ejecutar tools: siempre vuelve al LLM"""
     if state.get("status") == "error":
         return "finalize"
-    return "llm_native"  # o llm_react según modo
+    return "llm_react" if state.get("metadata", {}).get("tool_mode") == "react" else "llm_native"
 
 
 def route_after_interrupt(state: AgentState) -> str:
@@ -920,7 +923,9 @@ def build_aiion_graph(
     
     # Edges
     graph.set_entry_point("initialize")
-    graph.add_edge("initialize", "llm_native")  # conditional edge maneja react
+    graph.add_conditional_edges("initialize", lambda state:
+                                "llm_react" if state.get("metadata", {}).get("tool_mode") == "react"
+                                else "llm_native")
     
     # Conditional edges
     graph.add_conditional_edges("llm_native", route_after_llm)
@@ -981,6 +986,7 @@ def run_graph_sync(
     history: List[Dict],
     thread_id: Optional[str] = None,
     max_steps: int = 10,
+    metadata: Optional[Dict] = None,
 ) -> AgentState:
     """Ejecuta grafo sincrónicamente y retorna estado final"""
     initial_state = create_initial_state(
@@ -988,6 +994,7 @@ def run_graph_sync(
         history=history,
         thread_id=thread_id,
         max_steps=max_steps,
+        metadata=metadata,
     )
     return graph.invoke(initial_state, config={"thread_id": thread_id or initial_state["thread_id"]})
 
