@@ -17,6 +17,29 @@ FREE_MODELS = {
 }
 RETIRED_MODELS = set()  # modelos retirados por quota/fallos persistentes
 
+
+class PoolCooldownError(RuntimeError):
+    """No queda una combinación de clave y modelo disponible por ahora."""
+
+
+_KEY_HEALTH = {}
+_KEY_LOCK = threading.RLock()
+
+
+def _key_candidates():
+    return list(dict.fromkeys([STATE["model"]] + PREFERRED_MODELS))
+
+
+def record_key_failure(status: int, retry_after: float = 0.0) -> None:
+    """Autenticación afecta la clave; cuota y modelo afectan la combinación."""
+    scope = None if status in (401, 402, 403) else STATE["model"]
+    duration = {401: 300, 402: 300, 403: 60, 404: 3600,
+                410: 3600, 429: 65}.get(status, 5)
+    identity = (STATE["provider"], current_key(), scope)
+    with _KEY_LOCK:
+        _KEY_HEALTH[identity] = max(
+            _KEY_HEALTH.get(identity, 0), time.time() + max(duration, retry_after))
+
 def _log_silent_error(context: str, exc: BaseException = None):
     """Registra un error silenciado (en except: pass) para depuración."""
     try:
@@ -185,13 +208,29 @@ def load_api_keys():
     """Carga las API keys desde variable de entorno o archivos."""
     env = os.environ.get("OLLAMA_API_KEY", "").strip()
     if env:
-        return [k.strip() for k in env.split(",") if k.strip()]
+        return list(dict.fromkeys(k.strip() for k in env.split(",") if k.strip()))
     kf = AIION_HOME / "ollama_keys"
     if kf.exists():
         return [l.strip() for l in kf.read_text().splitlines() if l.strip()]
     kf2 = AIION_HOME / "ollama_key"
     if kf2.exists():
         return [kf2.read_text().strip()]
+    shared = Path.home() / ".blist_keys"
+    if shared.exists():
+        keys = []
+        for raw in shared.read_text().splitlines():
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            if "|" in line:
+                provider, key, *_ = (part.strip() for part in line.split("|"))
+                if provider.lower() != "ollama":
+                    continue
+            else:
+                key = line
+            if key and key not in keys:
+                keys.append(key)
+        return keys
     return []
 
 def current_key():
@@ -200,54 +239,24 @@ def current_key():
     return keys[STATE["key_index"] % len(keys)] if keys else ""
 
 def rotate_key():
-    """
-    Rotación de key mejorada con Kalman:
-    - Rota la key como antes
-    - Al cambiar de proveedor (local<->cloud) o simplemente cada rotación,
-      el modelo se elige por KALMAN.best_model() en vez de simplemente mantener el anterior.
-    """
-    prev_provider = STATE["provider"]
-    # Rotar key
-    STATE["key_index"] = (STATE["key_index"] + 1) % max(len(STATE["api_keys"]), 1)
-    k = current_key()
-    print(c(YL, f"  🔑 Rotando key #{STATE['key_index']+1}: {k[:8]}..."))
-
-    # Determinar proveedor actual basado en use_cloud
-    new_provider = "ollama" if STATE["use_cloud"] else "ollama_local"
-    # Para Kalman usamos solo "ollama" como proveedor (los modelos son los mismos)
-    kalman_provider = "ollama"
-
-    # Si el proveedor cambió, seleccionamos nuevo modelo con Kalman
-    if new_provider != prev_provider:
-        STATE["provider"] = new_provider
-        # Candidatos: modelos preferidos desde config
-        candidates = PREFERRED_MODELS[:]
-        # Filtrar retirados
-        candidates = [m for m in candidates if m not in RETIRED_MODELS]
-        new_model = KALMAN.best_model(kalman_provider, candidates)
-        if not new_model:
-            # fallback al primero de la lista o mantener actual
-            new_model = STATE["model"] or (PREFERRED_MODELS[0] if PREFERRED_MODELS else "")
-        if new_model and new_model != STATE["model"]:
-            old_model = STATE["model"]
-            STATE["model"] = new_model
-            kal_score = KALMAN.score(kalman_provider, new_model)
-            print(c(N_GREEN, f"  🔄 Proveedor cambió {prev_provider} → {new_provider} | "
-                           f"Modelo: {old_model[:20]} → {new_model[:20]} "
-                           f"{c(N_DIM, f'[Kalman:{kal_score}]')}"))
-    else:
-        # Incluso si no cambió proveedor, podemos actualizar modelo periódicamente con Kalman
-        # Para no cambiar demasiado, solo si el modelo actual está vacío o tiene muy bajo score
-        if not STATE["model"]:
-            candidates = PREFERRED_MODELS[:]
-            candidates = [m for m in candidates if m not in RETIRED_MODELS]
-            new_model = KALMAN.best_model(kalman_provider, candidates)
-            if new_model:
-                STATE["model"] = new_model
-                print(c(N_GREEN, f"  🤖 Modelo seleccionado por Kalman: {new_model[:30]} "
-                           f"{c(N_DIM, f'[score:{KALMAN.score(kalman_provider, new_model):.3f}]')}"))
-
-    return k
+    """Elige otra clave sana; si se agotan, prueba los modelos candidatos."""
+    keys = STATE["api_keys"]
+    if not keys:
+        raise PoolCooldownError("No hay claves configuradas.")
+    start = STATE["key_index"] % len(keys)
+    now = time.time()
+    with _KEY_LOCK:
+        for model in _key_candidates():
+            for step in range(1, len(keys) + 1):
+                index = (start + step) % len(keys)
+                key = keys[index]
+                identity = (STATE["provider"], key)
+                if (_KEY_HEALTH.get((*identity, None), 0) <= now and
+                        _KEY_HEALTH.get((*identity, model), 0) <= now):
+                    STATE.update(key_index=index, model=model)
+                    print(c(YL, f"  🔑 Pool: entrada {index + 1}/{len(keys)} | {model}"))
+                    return key
+    raise PoolCooldownError("Todas las claves y modelos están en espera; reintenta más tarde.")
 
 # Para compatibilidad con código que espera estas funciones
 def _kalman_record(prov_id: str, model: str, success: bool, t0: float):

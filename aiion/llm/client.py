@@ -1,7 +1,7 @@
 """aiion/llm/client.py — Cliente HTTP hacia Ollama (local o cloud), tool-calling nativo y fallback ReAct."""
 import json, re, urllib.request, urllib.error
 from aiion.config import OLLAMA_LOCAL, OLLAMA_CLOUD
-from aiion.llm.keys import STATE, current_key, rotate_key
+from aiion.llm.keys import STATE, current_key, rotate_key, record_key_failure, _key_candidates
 from aiion.tools.registry import TOOLS
 
 # Se detecta automáticamente; se puede forzar con /toolmode on|off
@@ -28,9 +28,19 @@ def _do_request(payload, retry=0):
             with urllib.request.urlopen(req, timeout=300) as r:
                 return json.loads(r.read())
         except urllib.error.HTTPError as e:
-            if e.code in (401,429) and len(STATE["api_keys"])>1 and retry<len(STATE["api_keys"]):
+            if e.code in (401, 402, 403, 404, 410, 429):
+                try:
+                    delay = max(0.0, float(e.headers.get("Retry-After", ""))) if e.headers else 0.0
+                except (TypeError, ValueError):
+                    delay = 0.0
+                record_key_failure(e.code, delay)
+                e.close()
+                if retry >= min(12, max(3, len(STATE["api_keys"]) * len(_key_candidates()))):
+                    raise
                 rotate_key()
-                return _do_request(payload, retry=retry+1)
+                body = json.loads(payload)
+                body["model"] = STATE["model"]
+                return _do_request(json.dumps(body).encode(), retry=retry+1)
             raise
     else:
         req = urllib.request.Request(
