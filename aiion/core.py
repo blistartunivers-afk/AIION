@@ -1,10 +1,10 @@
 """aiion/core.py — Orquestador: system prompt, loop del agente, comandos internos y main()."""
-import json, os, re, subprocess, sys, shutil, urllib.request, time
+import json, os, re, subprocess, sys, shutil, urllib.request, urllib.parse, time, ast, tempfile
 from pathlib import Path
 from datetime import datetime
 
 import pytest
-from aiion.config import AIION_HOME, MAX_ITER, VERSION, OLLAMA_LOCAL, OLLAMA_CLOUD, PREFERRED_MODELS, GEMINI_MODELS
+from aiion.config import AIION_HOME, MAX_ITER, VERSION, OLLAMA_LOCAL, OLLAMA_CLOUD, PREFERRED_MODELS, GEMINI_MODELS, GEMINI_API, NVIDIA_API, NVIDIA_MODEL
 from aiion.cli.ui import (
     c, hr, badge, BANNER, R, BOLD, DIM, ITALIC,
     CY, GR, YL, OR, RE, PK, PU, CO, D_FG,
@@ -20,7 +20,7 @@ from aiion.sensors.collectors import SENSOR_STATE, SENSOR_INTERVALS
 from aiion.voice.tts import speak, VOICE_STATE
 from aiion.voice.stt import listen
 from aiion.config import VOICES
-from aiion.llm.keys import STATE, load_api_keys, load_gemini_keys, current_key
+from aiion.llm.keys import STATE, load_api_keys, load_gemini_keys, load_nvidia_keys, current_key
 from aiion.llm.client import chat_native, chat_react_text, parse_react, TOOL_CALL_STATE
 from aiion.tools.registry import TOOLS, TOOL_MAP, DANGEROUS_TOOLS, execute_tool, ask_permission
 from aiion.core_modules.mythos_engine import MYTHOS
@@ -87,6 +87,8 @@ def build_system_prompt(user_input=""):
         "\nHERRAMIENTAS:\n"+tools_desc+tool_protocol+
         "════════ REGLAS ════════\n"
         "✅ Lee archivo ANTES de editar\n"
+        "✅ Antes de crear o modificar código, prepara una copia de trabajo aislada (proot si está disponible, o directorio temporal fuera del proyecto), ejecuta allí pruebas relevantes y aplica al proyecto solo cambios comprobados.\n"
+        "✅ Si no puedes probar en un entorno aislado, explica la limitación y pide autorización antes de modificar el código del proyecto. Nunca afirmes que proot o un directorio temporal garantizan aislamiento de seguridad.\n"
         "✅ Usa replace para cambios pequeños\n"
         "✅ Encadena tools sin límite\n"
         "✅ Responde SIEMPRE en español\n"
@@ -184,6 +186,7 @@ def _run_agent_legacy(user_input, history):
     spinner        = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
 
     # ── Modo nativo ───────────────────────────────────────────────────────────
+    fallback_to_react = False
     if TOOL_CALL_STATE["native"]:
         for step in range(MAX_ITER):
             sp = spinner[step % len(spinner)]
@@ -194,16 +197,17 @@ def _run_agent_legacy(user_input, history):
             try:
                 kind, data, raw_msg = chat_native(messages)
             except Exception as ex:
-                # Si falla tool calling, degradar a ReAct para esta sesión
-                TOOL_CALL_STATE["native"] = False
-                print(c(YL,f"\n  ⚠ Tool calling no soportado, usando ReAct ({ex})"))
+                # Un fallo temporal de API no implica que el modelo carezca de herramientas.
+                fallback_to_react = True
+                print(c(YL,f"\n  ⚠ Error en modo nativo; intentando ReAct ({ex})"))
                 break
             print(c(CO,f"  ⏱ paso {step+1}: {time.time()-t_paso_ini:.1f}s · RAM {ram_pct:.0f}%")+" "*15)
 
             if kind == "tool_call":
                 # El modelo quiere llamar tools
                 messages.append({"role":"assistant","content": raw_msg.get("content",""),
-                                  "tool_calls": raw_msg.get("tool_calls",[])})
+                                  "tool_calls": raw_msg.get("tool_calls",[]),
+                                  **{k: raw_msg[k] for k in ("gemini_parts", "gemini_model") if k in raw_msg}})
                 for fn_name, fn_args, call_id in data:
                     thought = raw_msg.get("content","").strip()
                     if thought:
@@ -225,7 +229,10 @@ def _run_agent_legacy(user_input, history):
                                       "tool_call_id": call_id, "name": fn_name})
 
             else:  # kind == "text" → respuesta final
-                final_response = data.strip()
+                final_response = (data or "").strip()
+                if not final_response:
+                    fallback_to_react = True
+                    break
                 _print_final(final_response, step)
                 print(c(GR,f"✅ Listo en {step+1} pasos · {time.time()-t_run_inicio:.1f}s · RAM pico {stats['ram_pico']:.0f}%"))
                 history_save(user_input, final_response)
@@ -236,7 +243,7 @@ def _run_agent_legacy(user_input, history):
         if final_response:
             return messages
         # Si salió del loop sin respuesta y sigue en modo nativo → warn
-        if TOOL_CALL_STATE["native"]:
+        if not fallback_to_react:
             print(c(YL,f"\n  ⚠ Límite {MAX_ITER} pasos alcanzado.\n"))
             return messages
         # Si degradó a ReAct, continúa abajo con los mensajes limpios
@@ -261,6 +268,8 @@ def _run_agent_legacy(user_input, history):
         print(c(CO,f"  {sp} [ReAct] paso {step+1}/{MAX_ITER}")+c(CO,f"  RAM {ram_pct:.0f}%"),end="\r",flush=True)
         try:
             raw = chat_react_text(clean_msgs)
+            if not (raw or "").strip():
+                raise RuntimeError("El modelo devolvió una respuesta vacía")
         except Exception as ex:
             print(c(RE,f"\n  ✗ API error: {ex}"))
             return messages
@@ -315,6 +324,45 @@ def get_cloud_models(api_key):
             return [m["name"] for m in json.loads(r.read()).get("models",[])]
     except: return []
 
+def get_gemini_models(api_key):
+    models, token = [], ""
+    while True:
+        query = "?pageSize=1000" + ("&pageToken=" + urllib.parse.quote(token) if token else "")
+        request = urllib.request.Request(GEMINI_API + query,
+            headers={"x-goog-api-key": api_key})
+        with urllib.request.urlopen(request, timeout=15) as response:
+            data = json.loads(response.read())
+        models.extend(item["name"].removeprefix("models/") for item in data.get("models", [])
+                      if "generateContent" in item.get("supportedGenerationMethods", [])
+                      and item.get("name", "").startswith("models/gemini-"))
+        token = data.get("nextPageToken", "")
+        if not token:
+            return list(dict.fromkeys(models))
+
+def get_nvidia_models(api_key):
+    request = urllib.request.Request(NVIDIA_API.rsplit("/chat/completions", 1)[0] + "/models",
+        headers={"Authorization": f"Bearer {api_key}"})
+    with urllib.request.urlopen(request, timeout=15) as response:
+        data = json.loads(response.read())
+    return list(dict.fromkeys(item["id"] for item in data.get("data", []) if item.get("id")))
+
+def choose_catalog_model(models, preferred):
+    if not models:
+        return None
+    print(f"\n{c(CY+BOLD,'  Modelos publicados por el proveedor:')}\n")
+    for index, name in enumerate(models, 1):
+        print(f"  {c(PU+BOLD,str(index)+'.')} {c(D_FG,name)}")
+    default = preferred if preferred in models else models[0]
+    while True:
+        choice = input(c(PU+BOLD, f"  ▸ Número o nombre [Enter={default}]: ")).strip()
+        if not choice:
+            return default
+        if choice.isdigit() and 1 <= int(choice) <= len(models):
+            return models[int(choice)-1]
+        if choice in models:
+            return choice
+        print(c(RE, "  Elige un modelo de la lista."))
+
 def get_model_type(name):
     l=name.lower()
     if any(x in l for x in ["llava","vision","moondream"]): return "multimodal"
@@ -338,25 +386,52 @@ def select_mode():
     print(f"  {c(GR+BOLD,'1.')} {c(GR,'Local')}  — Modelos en Android")
     print(f"  {c(CY+BOLD,'2.')} {c(CY,'Nube ')}  — Ollama Cloud + pool de API keys\n")
     print(f"  {c(PK+BOLD,'3.')} {c(PK,'Gemini')} — Google Gemini + pool de API keys\n")
+    print(f"  {c(CY+BOLD,'4.')} {c(CY,'NVIDIA')} — NVIDIA NIM + API key\n")
     while True:
-        try: choice=input(c(PU+BOLD,"  ▸ Elige modo [1/2/3, Enter=Gemini]: ")).strip()
+        try: choice=input(c(PU+BOLD,"  ▸ Elige modo [1/2/3/4, Enter=Gemini]: ")).strip()
         except (KeyboardInterrupt,EOFError): sys.exit(0)
         if not choice and load_gemini_keys(): return _setup_gemini()
         if choice=="1": return _setup_local()
         if choice=="2": return _setup_cloud()
         if choice=="3": return _setup_gemini()
-        print(c(RE,"  Escribe 1, 2 o 3"))
+        if choice=="4": return _setup_nvidia()
+        print(c(RE,"  Escribe 1, 2, 3 o 4"))
+
+def _setup_nvidia():
+    keys = load_nvidia_keys()
+    if not keys:
+        print(c(RE, "  Configura NVIDIA en ~/.blist_keys, NVIDIA_API_KEY o ~/AIION/data/nvidia_keys."))
+        return select_mode()
+    try:
+        models = get_nvidia_models(keys[0])
+    except Exception as ex:
+        print(c(YL, f"  ⚠ No se pudo consultar el catálogo NVIDIA: {ex}"))
+        models = []
+    try:
+        model = choose_catalog_model(models, NVIDIA_MODEL) if models else input(
+            c(PU+BOLD, f"  ▸ Modelo NVIDIA [Enter={NVIDIA_MODEL}]: ")).strip()
+    except (KeyboardInterrupt, EOFError):
+        sys.exit(0)
+    STATE.update(api_keys=keys, key_index=0, use_cloud=True,
+                 provider="nvidia", model=model or NVIDIA_MODEL)
 
 
 def _setup_gemini():
     keys = load_gemini_keys()
     if not keys:
-        print(c(RE, "  No hay claves de Gemini en GEMINI_API_KEY, gemini_keys o .blist_keys."))
+        print(c(RE, "  No hay claves de Gemini en GEMINI_API_KEY o gemini_keys."))
         return select_mode()
     print(c(GR, f"  {len(keys)} clave(s) de Gemini disponibles."))
-    print(f"  Modelos: {', '.join(GEMINI_MODELS)}")
     try:
-        choice = input(c(PU+BOLD, "  ▸ Modelo [Enter=predeterminado o nombre]: ")).strip()
+        models = get_gemini_models(keys[0])
+    except Exception as ex:
+        print(c(YL, f"  ⚠ No se pudo consultar el catálogo Gemini: {ex}"))
+        models = []
+    if not models:
+        print(f"  Modelos sugeridos: {', '.join(GEMINI_MODELS)}")
+    try:
+        choice = choose_catalog_model(models, GEMINI_MODELS[0]) if models else input(
+            c(PU+BOLD, "  ▸ Modelo [Enter=predeterminado o nombre]: ")).strip()
     except (KeyboardInterrupt, EOFError):
         sys.exit(0)
     STATE.update(api_keys=keys, key_index=0, use_cloud=True,
@@ -903,6 +978,8 @@ def print_help():
 {c(PU,'║')}  {c(CY,'/mcp <op>')}          MCP: status|ping|tools|call|set|config
 {c(PU,'║')}  {c(CY,'/clear')}             Limpiar historial de sesión
 {c(PU,'║')}  {c(CY,'/model')}             Cambiar modelo
+{c(PU,'║')}  {c(CY,'/reload')}            Aplicar cambios de código
+{c(PU,'║')}  {c(CY,'/pensar <nivel>')}    off|minimal|low|medium|high|default
 {c(PU,'║')}  {c(CY,'/tools')}             Ver todas las tools
 {c(PU,'║')}  {c(CY,'/cd <path>')}         Cambiar directorio
 {c(PU,'║')}  {c(CY,'/ram')}               Estado de RAM en detalle
@@ -983,7 +1060,18 @@ def handle_voice_command(cmd):
 
 
 def main():
-    select_mode()
+    reload_path = os.environ.pop("AIION_RELOAD_FILE", None)
+    restored = None
+    if reload_path is not None:
+        try:
+            with open(reload_path, "r") as stream:
+                restored = json.load(stream)
+        finally:
+            os.unlink(reload_path)
+        STATE.update(restored["state"])
+        os.chdir(restored["cwd"])
+    else:
+        select_mode()
     RAMGUARD.start()
     sensor_start()
 
@@ -1030,7 +1118,7 @@ def main():
     print(f"  {c(CO,'Ayuda:')}   /help\n")
     print(hr())
 
-    history=[]
+    history=restored["history"] if restored else []
     prompt=f"{c(PU+BOLD,'aiion')} {c(CO,'›')} "
 
     while True:
@@ -1058,6 +1146,20 @@ def main():
             RAMGUARD.stop(); sensor_stop(); sys.exit(0)
 
         elif user_input=="/help": print_help()
+        elif user_input=="/reload":
+            try:
+                source_root = Path(__file__).resolve().parents[1]
+                for source in [source_root / "main.py", *source_root.joinpath("aiion").rglob("*.py")]:
+                    ast.parse(source.read_text(encoding="utf-8"), filename=str(source))
+                state_fd, state_path = tempfile.mkstemp(prefix="aiion-reload-", dir=AIION_HOME)
+                with os.fdopen(state_fd, "w") as stream:
+                    json.dump({"state": STATE, "history": history, "cwd": os.getcwd()}, stream)
+                print(c(GR, "  ✓ Código validado; recargando AIION..."), flush=True)
+                RAMGUARD.stop(); sensor_stop()
+                os.environ["AIION_RELOAD_FILE"] = state_path
+                os.execv(sys.executable, [sys.executable, str(source_root / "main.py")])
+            except Exception as ex:
+                print(c(RE, f"  ✗ Recarga cancelada: {ex}"))
         elif user_input=="/status": print_status()
         elif user_input=="/skills": print_skills()
         elif user_input=="/doctor": system_doctor()
@@ -1117,9 +1219,18 @@ def main():
         elif user_input=="/model":
             select_mode(); print(c(GR,f"  ✓ Modelo: {STATE['model']}"))
 
+        elif user_input.startswith("/pensar"):
+            parts = user_input.split()
+            level = parts[1].lower() if len(parts) > 1 else ""
+            if level in ("off", "minimal", "low", "medium", "high", "default"):
+                STATE["thinking_level"] = level
+                print(c(GR, f"  🧠 Razonamiento Gemini: {level}"))
+            else:
+                print(f"  🧠 Actual: {STATE['thinking_level']} | Uso: /pensar off|minimal|low|medium|high|default")
+
         elif user_input=="/tools":
-            print(f"\n{c(CY+BOLD,'╔══ 28 Tools disponibles ═══════════════════')}")
-            cats={"📁 Filesystem":["read_file","write_file","replace","run_shell_command","list_directory","glob","grep_search"],
+            print(f"\n{c(CY+BOLD,f'╔══ {len(TOOL_MAP)} Tools disponibles ═══════════════════')}")
+            cats={"📁 Filesystem":["read_file","write_file","replace","run_shell_command","run_python","run_proot","list_directory","glob","grep_search"],
                   "🌐 Web":["web_fetch"],
                   "🧠 Memoria":["diff_files","memory_search"],
                   "⚙️ Procesos":["process_manager"],

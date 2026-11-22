@@ -14,13 +14,13 @@ def test_load_gemini_keys_from_env_and_file(tmp_path, monkeypatch):
     assert keys.load_gemini_keys() == ["env-one", "file-one", "file-two"]
 
 
-def test_load_gemini_keys_from_shared_pool(tmp_path, monkeypatch):
+def test_gemini_does_not_load_external_pool(tmp_path, monkeypatch):
     (tmp_path / ".blist_keys").write_text(
         "ollama|ignore\ngemini|google-one\ngoogle|google-two\n")
     monkeypatch.setattr(keys, "AIION_HOME", tmp_path / "empty")
     monkeypatch.setattr(keys.Path, "home", lambda: tmp_path)
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
-    assert keys.load_gemini_keys() == ["google-one", "google-two"]
+    assert keys.load_gemini_keys() == []
 
 
 def test_select_gemini_uses_google_keys(monkeypatch):
@@ -85,3 +85,38 @@ def test_gemini_tool_result_is_sent_back(monkeypatch):
     assert system == "instrucciones"
     assert contents[0]["parts"][0]["functionCall"]["name"] == "read_file"
     assert contents[1]["parts"][0]["functionResponse"]["response"]["result"] == "contenido"
+
+
+def test_gemini_400_retries_with_provider_thinking_default(monkeypatch):
+    monkeypatch.setattr(keys, "_KEY_HEALTH", {})
+    for name, value in dict(provider="gemini", model="gemini-3-test",
+                            api_keys=["first", "second"], key_index=0,
+                            thinking_level="medium").items():
+        monkeypatch.setitem(keys.STATE, name, value)
+    seen = []
+
+    def read_json(request):
+        seen.append((request.get_header("X-goog-api-key"), json.loads(request.data)))
+        if len(seen) == 1:
+            raise urllib.error.HTTPError(request.full_url, 400, "invalid", {}, io.BytesIO(b"{}"))
+        return {"candidates": [{"content": {"parts": [{"text": "ok"}]}}]}
+
+    monkeypatch.setattr(client, "_read_json", read_json)
+    assert client.chat_react_text([{"role": "user", "content": "hola"}]) == "ok"
+    assert [key for key, _ in seen] == ["first", "first"]
+    assert "thinkingConfig" in seen[0][1]["generationConfig"]
+    assert "thinkingConfig" not in seen[1][1]["generationConfig"]
+
+
+def test_gemini_preserves_signed_parts_and_groups_parallel_results(monkeypatch):
+    monkeypatch.setitem(keys.STATE, "model", "gemini-3-test")
+    parts = [{"functionCall": {"name": "read_file", "args": {}}, "thoughtSignature": "opaque"},
+             {"functionCall": {"name": "list_directory", "args": {}}}]
+    _, contents = client._messages_to_gemini([
+        {"role": "assistant", "gemini_parts": parts, "gemini_model": "gemini-3-test"},
+        {"role": "tool", "name": "read_file", "content": "one"},
+        {"role": "tool", "name": "list_directory", "content": "two"},
+    ])
+    assert contents[0]["parts"] == parts
+    assert len(contents[1]["parts"]) == 2
+    assert len(contents) == 2

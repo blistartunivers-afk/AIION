@@ -1,5 +1,6 @@
 """El grafo público debe arrancar y distinguir respuestas de errores."""
 from types import SimpleNamespace
+from urllib.error import HTTPError
 
 import pytest
 
@@ -13,12 +14,14 @@ class MemoryCheckpointer:
 
 
 @pytest.mark.parametrize("native", [True, False])
-@pytest.mark.parametrize("answer", ["respuesta", ""])
+@pytest.mark.parametrize("answer", ["respuesta", "", "400"])
 def test_graph_handles_model_reply(native, answer):
     calls = []
 
     def chat_native(_messages):
         calls.append("native")
+        if answer == "400":
+            raise HTTPError("https://test.invalid", 400, "invalid", {}, None)
         return "text", answer, {}
 
     def chat_react(_messages):
@@ -49,7 +52,8 @@ def test_graph_handles_model_reply(native, answer):
     )
     state = run_graph_sync(graph, "hola", [], max_steps=10,
                            metadata={"tool_mode": "native" if native else "react"})
-    assert calls == ["native" if native else "react"]
+    assert calls == (["native", "react"] if native and answer in ("", "400")
+                     else ["native" if native else "react"])
     assert state["status"] == ("completed" if answer else "error")
     assert state["final_response"] == answer
     if not answer:

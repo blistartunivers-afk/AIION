@@ -7,6 +7,9 @@ import sqlite3
 import threading
 import time
 import uuid
+from urllib.error import HTTPError
+
+from aiion.llm.keys import PoolCooldownError
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
@@ -678,9 +681,23 @@ def create_aiion_nodes(
             state["error"] = "Modo nativo no disponible"
             return state
         
+        def fallback():
+            state.setdefault("metadata", {})["tool_mode"] = "react"
+            return node_llm_react(state)
+
         messages = state["messages"]
         try:
             kind, data, raw_msg = chat_native_fn(messages)
+        except PoolCooldownError as e:
+            print(f"  {e} · probando recuperación en ReAct")
+            return fallback()
+        except HTTPError as e:
+            if e.code in (400, 422):
+                print(f"  HTTP {e.code} en modo nativo · probando ReAct")
+                return fallback()
+            state["status"] = "error"
+            state["error"] = f"LLM error: {e}"
+            return state
         except Exception as e:
             state["status"] = "error"
             state["error"] = f"LLM error: {e}"
@@ -697,7 +714,8 @@ def create_aiion_nodes(
             state["messages"].append({
                 "role": "assistant",
                 "content": raw_msg.get("content", ""),
-                "tool_calls": tool_calls
+                "tool_calls": tool_calls,
+                **{k: raw_msg[k] for k in ("gemini_parts", "gemini_model") if k in raw_msg},
             })
             state["thoughts"].append(raw_msg.get("content", "").strip())
             return state
@@ -705,9 +723,7 @@ def create_aiion_nodes(
             # Respuesta final
             state["final_response"] = (data or "").strip()
             if not state["final_response"]:
-                state["status"] = "error"
-                state["error"] = "El modelo devolvió una respuesta vacía"
-                return state
+                return fallback()
             state["status"] = "completed"
             return state
     

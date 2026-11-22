@@ -112,6 +112,16 @@ python aiion_keys.py
 python main.py
 ```
 
+Para permitir que AIION continúe con otros proveedores cuando se agote el pool
+del proveedor activo, define el orden al iniciar la CLI:
+
+```bash
+AIION_FALLBACK_PROVIDERS=gemini,nvidia,ollama python main.py
+```
+
+Cada proveedor usa las claves configuradas en AIION. El proveedor alternativo
+recibe el contexto del turno en modo ReAct y queda activo si responde.
+
 ---
 
 ## 📚 Documentación

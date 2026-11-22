@@ -1,4 +1,4 @@
-"""aiion/tools/registry.py — Definición JSON de las 28 tools, dispatch table y sistema de permisos."""
+"""aiion/tools/registry.py — Definición JSON de las tools, dispatch table y permisos."""
 import json, os, subprocess, inspect
 from aiion.config import DANGEROUS_TOOLS
 from aiion.cli.ui import c, YL, PK, CO, GR, RE, BOLD, PU, CY
@@ -6,6 +6,7 @@ from aiion.memory.persistence import history_search
 from aiion.tools.filesystem import (
     tool_read_file, tool_write_file, tool_replace, tool_run_shell_command,
     tool_list_directory, tool_glob, tool_grep_search, tool_web_fetch, tool_diff_files,
+    tool_run_python, tool_run_proot,
 )
 from aiion.tools.android import (
     tool_get_android_status, tool_sensor_query, tool_take_photo, tool_listar_camaras,
@@ -29,6 +30,10 @@ TOOLS = [
      "parameters":{"type":"object","properties":{"path":{"type":"string"},"old_str":{"type":"string"},"new_str":{"type":"string"}},"required":["path","old_str","new_str"]}}},
     {"type":"function","function":{"name":"run_shell_command","description":"Ejecuta comando bash en Termux.",
      "parameters":{"type":"object","properties":{"command":{"type":"string"},"timeout":{"type":"integer"}},"required":["command"]}}},
+    {"type":"function","function":{"name":"run_python","description":"Ejecuta código Python en un subproceso de Termux.",
+     "parameters":{"type":"object","properties":{"code":{"type":"string"},"timeout":{"type":"integer"}},"required":["code"]}}},
+    {"type":"function","function":{"name":"run_proot","description":"Ejecuta un comando dentro de una distribución instalada de proot-distro (por defecto ubuntu).",
+     "parameters":{"type":"object","properties":{"command":{"type":"string"},"distro":{"type":"string"},"timeout":{"type":"integer"}},"required":["command"]}}},
     {"type":"function","function":{"name":"list_directory","description":"Lista archivos con tamaños.",
      "parameters":{"type":"object","properties":{"path":{"type":"string"},"show_hidden":{"type":"boolean"}},"required":["path"]}}},
     {"type":"function","function":{"name":"glob","description":"Busca archivos por patrón glob.",
@@ -122,6 +127,8 @@ TOOL_MAP = {
     "write_file":           tool_write_file,
     "replace":              tool_replace,
     "run_shell_command":    tool_run_shell_command,
+    "run_python":           tool_run_python,
+    "run_proot":            tool_run_proot,
     "list_directory":       tool_list_directory,
     "glob":                 tool_glob,
     "grep_search":          tool_grep_search,
@@ -148,7 +155,7 @@ TOOL_MAP = {
     "eliminar_tarea":       tool_eliminar_tarea,
 }
 
-assert len(TOOL_MAP)==28, f"Error: {len(TOOL_MAP)} tools (esperadas 28)"
+assert len(TOOL_MAP)==len(TOOLS), "El registro y las definiciones de tools no coinciden"
 
 # ══════════════════════════════════════════════════════════════════════════════
 # PERMISOS
@@ -177,7 +184,7 @@ _tool_err = {}
 def execute_tool(name, args):
     fn=TOOL_MAP.get(name)
     if not fn: return f"Tool desconocida: {name}"
-    REQUIRED={"run_shell_command":"command","write_file":"path","read_file":"path",
+    REQUIRED={"run_shell_command":"command","run_python":"code","run_proot":"command","write_file":"path","read_file":"path",
                "replace":"path","list_directory":"path","grep_search":"pattern",
                "glob":"pattern","web_fetch":"url","diff_files":"path_a",
                "memory_search":"query","process_manager":"action",

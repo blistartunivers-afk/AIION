@@ -48,6 +48,34 @@ def tool_run_shell_command(command, timeout=60):
     except subprocess.TimeoutExpired: return f"Error: Timeout ({timeout}s)"
     except Exception as ex: return f"Error: {ex}"
 
+def tool_run_python(code, timeout=60):
+    """Ejecuta código Python aislado en un subproceso de Termux."""
+    try:
+        r = subprocess.run(["python", "-c", code], capture_output=True, text=True,
+                           timeout=max(1, min(int(timeout), 300)))
+        output = (r.stdout + ("\nSTDERR:\n" + r.stderr if r.stderr else "")).strip()
+        return f"Exit: {r.returncode}\n{output[:12000]}" if output else f"Exit: {r.returncode}"
+    except subprocess.TimeoutExpired:
+        return "Error: Python excedió el tiempo límite."
+    except Exception as ex:
+        return f"Error: {ex}"
+
+def tool_run_proot(command, distro="ubuntu", timeout=60):
+    """Ejecuta un comando en una distribución ya instalada de proot-distro."""
+    if not distro or any(char not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-" for char in distro):
+        return "Error: Nombre de distribución inválido."
+    if not command.strip():
+        return "Error: Falta el comando."
+    try:
+        r = subprocess.run(["proot-distro", "login", distro, "--", "bash", "-lc", command],
+                           capture_output=True, text=True, timeout=max(1, min(int(timeout), 300)))
+        output = (r.stdout + ("\nSTDERR:\n" + r.stderr if r.stderr else "")).strip()
+        return f"Exit: {r.returncode}\n{output[:12000]}" if output else f"Exit: {r.returncode}"
+    except subprocess.TimeoutExpired:
+        return "Error: proot excedió el tiempo límite."
+    except Exception as ex:
+        return f"Error: {ex}"
+
 def tool_list_directory(path, show_hidden=False):
     try:
         p=Path(path).expanduser()

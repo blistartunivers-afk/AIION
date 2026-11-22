@@ -4,7 +4,7 @@ import threading
 import time
 from collections import defaultdict
 from pathlib import Path
-from aiion.config import AIION_HOME, PREFERRED_MODELS, GEMINI_MODELS
+from aiion.config import AIION_HOME, PREFERRED_MODELS, GEMINI_MODELS, NVIDIA_MODEL
 from aiion.db import init_db
 from aiion.cli.ui import c, YL, N_GREEN, N_YELLOW, N_RED, N_BLUE, N_WHITE, N_DIM, N_ORANGE
 
@@ -27,7 +27,7 @@ _KEY_LOCK = threading.RLock()
 
 
 def _key_candidates():
-    models = GEMINI_MODELS if STATE["provider"] == "gemini" else PREFERRED_MODELS
+    models = GEMINI_MODELS if STATE["provider"] == "gemini" else ([NVIDIA_MODEL] if STATE["provider"] == "nvidia" else PREFERRED_MODELS)
     return list(dict.fromkeys([STATE["model"]] + models))
 
 
@@ -203,6 +203,7 @@ STATE = {
     "key_index": 0,        # índice de la key en uso
     "use_cloud": False,    # True si se usa Ollama Cloud, False para local
     "provider": "ollama",  # id de proveedor para Kalman (ollama, openrouter, gemini)
+    "thinking_level": "default",
 }
 
 def load_api_keys():
@@ -216,27 +217,11 @@ def load_api_keys():
     kf2 = AIION_HOME / "ollama_key"
     if kf2.exists():
         return [kf2.read_text().strip()]
-    shared = Path.home() / ".blist_keys"
-    if shared.exists():
-        keys = []
-        for raw in shared.read_text().splitlines():
-            line = raw.strip()
-            if not line or line.startswith("#"):
-                continue
-            if "|" in line:
-                provider, key, *_ = (part.strip() for part in line.split("|"))
-                if provider.lower() != "ollama":
-                    continue
-            else:
-                key = line
-            if key and key not in keys:
-                keys.append(key)
-        return keys
     return []
 
 
 def load_gemini_keys():
-    """Carga claves Google de entorno, archivo AIION o pool compartido."""
+    """Carga claves Google de entorno o archivo AIION."""
     result = []
     env = os.environ.get("GEMINI_API_KEY", "")
     for value in env.split(","):
@@ -249,30 +234,49 @@ def load_gemini_keys():
             value = raw.strip()
             if value and not value.startswith("#") and value not in result:
                 result.append(value)
-    if result:
-        return result
+    return result
+
+def load_nvidia_keys():
+    """Prioriza el pool NVIDIA de BLIST v11 y conserva las fuentes de AIION."""
+    result = []
     shared = Path.home() / ".blist_keys"
-    if shared.exists():
+    if shared.is_file():
         for raw in shared.read_text().splitlines():
+            provider, separator, remainder = raw.strip().partition("|")
+            if separator and provider.strip() == "nvidia":
+                key = remainder.split("|", 1)[0].strip()
+            elif not separator and provider.startswith("nvapi-"):
+                key = provider
+            else:
+                continue
+            if key and key not in result:
+                result.append(key)
+    for value in os.environ.get("NVIDIA_API_KEY", "").split(","):
+        if value.strip() and value.strip() not in result:
+            result.append(value.strip())
+    for path in (AIION_HOME / "nvidia_keys",):
+        if not path.exists():
+            continue
+        for raw in path.read_text().splitlines():
             line = raw.strip()
             if not line or line.startswith("#"):
                 continue
-            if "|" in line:
-                provider, value, *_ = (part.strip() for part in line.split("|"))
-                if provider.lower() not in ("gemini", "google"):
-                    continue
-            elif line.startswith(("AIza", "AQ.")):
-                value = line
-            else:
-                continue
-            if value and value not in result:
-                result.append(value)
+            if line not in result:
+                result.append(line)
     return result
 
 def current_key():
     """Devuelve la key actual según el índice."""
     keys = STATE["api_keys"]
     return keys[STATE["key_index"] % len(keys)] if keys else ""
+
+def current_route_available():
+    identity = (STATE["provider"], current_key())
+    now = time.time()
+    with _KEY_LOCK:
+        return (_KEY_HEALTH.get((*identity, None), 0) <= now
+                and _KEY_HEALTH.get((*identity, STATE["model"]), 0) <= now)
+
 
 def rotate_key():
     """Elige otra clave sana; si se agotan, prueba los modelos candidatos."""
