@@ -23,7 +23,7 @@ OLLAMA_CLOUD = os.getenv("OLLAMA_CLOUD", "https://ollama.com")
 GEMINI_API = os.getenv("GEMINI_API", "https://generativelanguage.googleapis.com/v1beta/models")
 GEMINI_MODELS = ["gemini-3.5-flash-lite", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-2.5-pro"]
 NVIDIA_API = os.getenv("NVIDIA_API", "https://integrate.api.nvidia.com/v1/chat/completions")
-NVIDIA_MODEL = os.getenv("NVIDIA_MODEL", "nvidia/nemotron-3-nano-30b-a3b")
+NVIDIA_MODEL = os.getenv("NVIDIA_MODEL", "nvidia/nemotron-3.5-lightning-30b-a3b")
 
 # ─── Modelos preferidos (orden de prioridad) ───
 PREFERRED_MODELS = [
