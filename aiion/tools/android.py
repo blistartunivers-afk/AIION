@@ -30,8 +30,8 @@ def tool_take_photo(camera_id=0, filename=""):
     try:
         fn=filename or f"~/foto_{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
         fn=str(Path(fn).expanduser())
-        r=subprocess.run(f"termux-camera-photo -c {camera_id} {fn}",
-                         shell=True,capture_output=True,text=True,timeout=15)
+        r=subprocess.run(["termux-camera-photo", "-c", str(int(camera_id)), fn],
+                         shell=False,capture_output=True,text=True,timeout=15)
         if r.returncode==0 and Path(fn).exists():
             size=Path(fn).stat().st_size
             return f"OK: Foto guardada en {fn} ({size} bytes)"
@@ -43,32 +43,32 @@ def tool_listar_camaras():
     return json.dumps(d,indent=2,ensure_ascii=False) if d else "Error: termux-api no disponible"
 
 def tool_get_gps(provider="network"):
-    d=_termux(f"termux-location -p {provider}",timeout=20)
+    d=_termux(["termux-location", "-p", str(provider)],timeout=20)
     if not d and provider!="network": d=_termux("termux-location -p network",timeout=15)
     return json.dumps(d,indent=2,ensure_ascii=False) if d else "Error: no se pudo obtener ubicación"
 
 def tool_notificacion(title, content, id=1234):
-    r=subprocess.run(f"termux-notification --title '{title}' --content '{content}' --id {id}",
-                     shell=True,capture_output=True,text=True,timeout=8)
+    r=subprocess.run(["termux-notification", "--title", str(title), "--content", str(content), "--id", str(int(id))],
+                     shell=False,capture_output=True,text=True,timeout=8)
     return "OK: Notificación enviada" if r.returncode==0 else f"Error: {r.stderr.strip()}"
 
 def tool_cancelar_notificacion(id):
-    r=subprocess.run(f"termux-notification-remove {id}",shell=True,capture_output=True,text=True,timeout=5)
+    r=subprocess.run(["termux-notification-remove", str(int(id))],shell=False,capture_output=True,text=True,timeout=5)
     return f"OK: Notificación {id} cancelada" if r.returncode==0 else f"Error: {r.stderr.strip()}"
 
 
 def tool_crear_tarea(comando, cuando, nombre="tarea_aiion"):
     try:
         # Intentar con at
-        r=subprocess.run(f"echo '{comando}' | at {cuando} 2>&1",
-                         shell=True,capture_output=True,text=True,timeout=10)
+        r=subprocess.run(["at", "--", str(cuando)],
+                         input=str(comando)+"\n",capture_output=True,text=True,timeout=10)
         if r.returncode==0: return f"OK: Tarea programada para '{cuando}'"
         # Fallback crontab
-        r2=subprocess.run("crontab -l 2>/dev/null",shell=True,capture_output=True,text=True,timeout=5)
+        r2=subprocess.run(["crontab", "-l"],shell=False,capture_output=True,text=True,timeout=5)
         existing=r2.stdout.strip()
         new_line=f"# {nombre}\n{cuando} {comando}"
         new_cron=existing+"\n"+new_line if existing else new_line
-        r3=subprocess.run("crontab -",shell=True,input=new_cron,capture_output=True,text=True,timeout=5)
+        r3=subprocess.run(["crontab", "-"],shell=False,input=new_cron,capture_output=True,text=True,timeout=5)
         return "OK: Tarea añadida a crontab" if r3.returncode==0 else f"Error: {r3.stderr.strip()}"
     except Exception as ex: return f"Error: {ex}"
 
@@ -81,11 +81,8 @@ def tool_listar_tareas():
     return "\n\n".join(parts) if parts else "Sin tareas programadas"
 
 def tool_eliminar_tarea(id):
-    r=subprocess.run(f"atrm {id} 2>/dev/null || echo 'intento_cron'",
-                     shell=True,capture_output=True,text=True,timeout=5)
-    if "intento_cron" not in r.stdout:
-        return f"OK: Tarea at {id} eliminada"
-    r2=subprocess.run("crontab -l 2>/dev/null",shell=True,capture_output=True,text=True,timeout=5)
-    lines=[l for l in r2.stdout.splitlines() if id not in l]
-    r3=subprocess.run("crontab -",shell=True,input="\n".join(lines),capture_output=True,text=True,timeout=5)
-    return "OK: Tarea eliminada de crontab" if r3.returncode==0 else f"Error: {r3.stderr.strip()}"
+    task_id = str(id)
+    if not task_id.isdigit():
+        return "Error: se requiere un ID numérico de at; no se modifica crontab por coincidencias parciales"
+    r=subprocess.run(["atrm", task_id],capture_output=True,text=True,timeout=5)
+    return "OK: Tarea eliminada" if r.returncode==0 else f"Error: {r.stderr.strip()}"

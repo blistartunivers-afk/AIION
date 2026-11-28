@@ -5,20 +5,20 @@ from aiion.voice.tts import speak, VOICE_STATE
 from aiion.config import VOICES, GROQ_TTS_MODEL
 
 def tool_leer_sms(limit=5, type="all"):
-    d=_termux(f"termux-sms-list -l {limit} -t {type}",timeout=12)
+    d=_termux(["termux-sms-list", "-l", str(int(limit)), "-t", str(type)],timeout=12)
     return json.dumps(d,indent=2,ensure_ascii=False) if d else "Error: no se pudo leer SMS"
 
 def tool_enviar_sms(number, message):
-    r=subprocess.run(f"termux-sms-send -n '{number}' '{message}'",
-                     shell=True,capture_output=True,text=True,timeout=15)
+    r=subprocess.run(["termux-sms-send", "-n", str(number), "--", str(message)],
+                     shell=False,capture_output=True,text=True,timeout=15)
     return f"OK: SMS enviado a {number}" if r.returncode==0 else f"Error: {r.stderr.strip()}"
 
 def tool_historial_llamadas(limit=10):
-    d=_termux(f"termux-call-log -l {limit}",timeout=10)
+    d=_termux(["termux-call-log", "-l", str(int(limit))],timeout=10)
     return json.dumps(d,indent=2,ensure_ascii=False) if d else "Error: no se pudo leer historial"
 
 def tool_hacer_llamada(number):
-    r=subprocess.run(f"termux-telephony-call {number}",shell=True,capture_output=True,text=True,timeout=10)
+    r=subprocess.run(["termux-telephony-call", str(number)],shell=False,capture_output=True,text=True,timeout=10)
     return f"OK: Llamando a {number}" if r.returncode==0 else f"Error: {r.stderr.strip()}"
 
 def tool_info_telefonia():

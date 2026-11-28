@@ -103,14 +103,15 @@ def tool_process_manager(action, target="", signal="TERM"):
             r=subprocess.run("ps aux --sort=-%mem|head -20",shell=True,capture_output=True,text=True,timeout=10)
             return f"Top procesos RAM:\n{r.stdout.strip()}"
         elif action=="find":
-            r=subprocess.run(f"ps aux|grep -i '{target}'|grep -v grep",shell=True,capture_output=True,text=True,timeout=10)
+            r=subprocess.run(["ps", "aux"],capture_output=True,text=True,timeout=10)
+            r.stdout="\n".join(line for line in r.stdout.splitlines() if str(target).casefold() in line.casefold())
             return f"Procesos '{target}':\n{r.stdout.strip()}" if r.stdout.strip() else f"No encontrado: {target}"
         elif action=="kill":
             try: pid=int(target)
             except: return f"PID inválido: {target}"
             if pid==os.getpid(): return "Error: No puedes matar el agente."
             sig="-15" if signal.upper()=="TERM" else "-9"
-            r=subprocess.run(f"kill {sig} {pid}",shell=True,capture_output=True,text=True,timeout=10)
+            r=subprocess.run(["kill", sig, str(pid)],shell=False,capture_output=True,text=True,timeout=10)
             return f"OK: PID {pid} terminado." if r.returncode==0 else f"Error: {r.stderr.strip()}"
         return f"Acción desconocida: {action}"
     except Exception as ex: return f"Error: {ex}"
