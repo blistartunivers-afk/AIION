@@ -1,0 +1,18 @@
+name: Audit regressions
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  regression:
+    name: Audit regressions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - run: python3 scripts/test_check_sarif.py
+      - run: python3 -m pip install pytest pytest-mock requests
+      - name: Run isolated DB, memory and tool regressions
+        env:
+          AIION_HOME: ${{ runner.temp }}/aiion-audit-data
+        run: python3 -m pytest tests/test_db.py tests/test_memory.py tests/test_security_boundaries.py -q -k 'not TestRAMGuard'

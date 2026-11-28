@@ -9,6 +9,14 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
+@pytest.fixture(autouse=True)
+def isolate_cognitive_index_storage(monkeypatch, tmp_path):
+    """Every case, including direct constructors, must avoid the user's index."""
+    import aiion.memory.cognitive_index as module
+    monkeypatch.setattr(module, "INDEX_FILE", tmp_path / "cognitive_index.json")
+    monkeypatch.setattr(module, "COGINDEX", module.CognitiveIndex())
+
+
 # =============================================================================
 # FIXTURES GLOBALES
 # =============================================================================
@@ -141,7 +149,8 @@ def memory_persistence(config_module):
 def cognitive_index(config_module):
     """Instancia de CognitiveIndex con archivos temporales."""
     from aiion.memory.cognitive_index import CognitiveIndex
-    return CognitiveIndex()
+    with patch("aiion.memory.cognitive_index.INDEX_FILE", config_module.AIION_HOME / "cognitive_index.json"):
+        yield CognitiveIndex()
 
 
 @pytest.fixture

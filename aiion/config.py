@@ -77,6 +77,6 @@ LOG_LEVEL = 'INFO'
 DANGEROUS_TOOLS = {
     "write_file", "replace", "run_shell_command", "enviar_sms",
     "hacer_llamada", "crear_tarea", "eliminar_tarea",
-    "cancelar_notificacion", "take_photo"
+    "cancelar_notificacion", "take_photo", "process_manager"
 }
 MAX_HISTORY = 20

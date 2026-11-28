@@ -336,3 +336,10 @@ class TestMemoryIntegration:
         
         results = memory_persistence.history_search("pandas")
         assert len(results) >= 1
+
+
+def test_direct_cognitive_instances_are_isolated(tmp_path):
+    import aiion.memory.cognitive_index as module
+    assert module.INDEX_FILE.is_relative_to(tmp_path)
+    module.CognitiveIndex().mark_read("synthetic.py", "synthetic content")
+    assert module.INDEX_FILE.exists()

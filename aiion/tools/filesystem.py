@@ -1,5 +1,6 @@
 """aiion/tools/filesystem.py — Tools de sistema de archivos, shell y búsqueda."""
 import os, re, subprocess, urllib.request
+import difflib
 from pathlib import Path
 from aiion.memory.cognitive_index import COGINDEX
 
@@ -71,10 +72,10 @@ def tool_glob(pattern, base_path="."):
 
 def tool_grep_search(pattern, path, recursive=True):
     try:
-        flag="-r" if recursive else ""
-        cmd=f"grep -n {flag} -E '{pattern}' '{path}' 2>/dev/null | head -60"
-        r=subprocess.run(cmd,shell=True,capture_output=True,text=True,timeout=20)
-        out=r.stdout.strip()
+        cmd=["grep", "-n"] + (["-r"] if recursive else []) + ["-E", "--", str(pattern), str(path)]
+        r=subprocess.run(cmd,capture_output=True,text=True,timeout=20)
+        if r.returncode not in (0, 1): return f"Error: {r.stderr.strip()}"
+        out="\n".join(r.stdout.splitlines()[:60]).strip()
         return f"Resultados '{pattern}':\n{out}" if out else f"Sin coincidencias: {pattern}"
     except Exception as ex: return f"Error: {ex}"
 
@@ -96,8 +97,10 @@ def tool_diff_files(path_a, path_b="", context_lines=3):
         if not pa.exists(): return f"Error: No existe: {path_a}"
         pb=pa.with_suffix(pa.suffix+".bak") if not path_b else Path(path_b).expanduser()
         if not pb.exists(): return f"No hay backup de {path_a}. Pasa path_b explícito."
-        r=subprocess.run(f"diff -u '{pb}' '{pa}'|head -120",
-                         shell=True,capture_output=True,text=True,timeout=15)
-        return f"Diff {pb}→{pa}:\n{r.stdout.strip()}" if r.stdout.strip() else "Archivos idénticos."
+        diff="".join(difflib.unified_diff(pb.read_text(errors="replace").splitlines(True),
+                    pa.read_text(errors="replace").splitlines(True), fromfile=str(pb), tofile=str(pa),
+                    n=max(0, min(int(context_lines), 50))))
+        out="\n".join(diff.splitlines()[:120])
+        return f"Diff {pb}→{pa}:\n{out}" if out else "Archivos idénticos."
     except Exception as ex: return f"Error: {ex}"
 
