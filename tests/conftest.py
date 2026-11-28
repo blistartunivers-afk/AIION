@@ -9,6 +9,14 @@ import pytest
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 
+@pytest.fixture(autouse=True)
+def isolate_cognitive_index_storage(monkeypatch, tmp_path):
+    """Every case, including direct constructors, must avoid the user's index."""
+    import aiion.memory.cognitive_index as module
+    monkeypatch.setattr(module, "INDEX_FILE", tmp_path / "cognitive_index.json")
+    monkeypatch.setattr(module, "COGINDEX", module.CognitiveIndex())
+
+
 # =============================================================================
 # FIXTURES GLOBALES
 # =============================================================================

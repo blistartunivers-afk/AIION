@@ -90,5 +90,21 @@ class Boundaries(unittest.TestCase):
             self.assertEqual(args[4], marker)
             self.assertFalse(kw.get('shell', False))
 
+    def test_named_cron_deletion_preserves_similar_and_unrelated_tasks(self):
+        path = ROOT/'aiion/tools/android.py'
+        if not path.exists(): path = ROOT/'bridges/aiion_core.py'
+        calls = []
+        before = '# report\n0 * * * * run-report\n# report-extra\n1 * * * * run-extra\n'
+        def run(args, **kwargs):
+            calls.append((args, kwargs))
+            return SimpleNamespace(returncode=0, stdout=before, stderr='')
+        ns = {'subprocess':SimpleNamespace(run=run)}
+        definitions(path, {'tool_eliminar_tarea'}, ns)
+        self.assertTrue(ns['tool_eliminar_tarea']('report').startswith('OK'))
+        self.assertEqual(calls[-1][1]['input'], '# report-extra\n1 * * * * run-extra\n')
+        calls.clear()
+        self.assertTrue(ns['tool_eliminar_tarea']('repo').startswith('Error'))
+        self.assertEqual(len(calls),1)  # no write for partial matches
+
 
 if __name__ == '__main__': unittest.main()

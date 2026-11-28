@@ -59,11 +59,16 @@ def tool_cancelar_notificacion(id):
 
 def tool_crear_tarea(comando, cuando, nombre="tarea_aiion"):
     try:
+        if not isinstance(nombre, str) or not nombre.strip() or len(nombre) > 128 or any(c in nombre for c in "\r\n\0"):
+            return "Error: nombre de tarea inválido"
+        if any(c in str(cuando) for c in "\r\n\0"):
+            return "Error: el horario debe ser una sola línea"
         # Intentar con at
         r=subprocess.run(["at", "--", str(cuando)],
                          input=str(comando)+"\n",capture_output=True,text=True,timeout=10)
         if r.returncode==0: return f"OK: Tarea programada para '{cuando}'"
         # Fallback crontab
+        if "\n" in str(comando): return "Error: tareas multilínea requieren at"
         r2=subprocess.run(["crontab", "-l"],shell=False,capture_output=True,text=True,timeout=5)
         existing=r2.stdout.strip()
         new_line=f"# {nombre}\n{cuando} {comando}"
@@ -82,7 +87,20 @@ def tool_listar_tareas():
 
 def tool_eliminar_tarea(id):
     task_id = str(id)
-    if not task_id.isdigit():
-        return "Error: se requiere un ID numérico de at; no se modifica crontab por coincidencias parciales"
-    r=subprocess.run(["atrm", task_id],capture_output=True,text=True,timeout=5)
-    return "OK: Tarea eliminada" if r.returncode==0 else f"Error: {r.stderr.strip()}"
+    if not task_id or len(task_id) > 128 or any(c in task_id for c in "\r\n\0"):
+        return "Error: ID o nombre inválido"
+    if task_id.isdigit():
+        r=subprocess.run(["atrm", task_id],capture_output=True,text=True,timeout=5)
+        return "OK: Tarea eliminada" if r.returncode==0 else f"Error: {r.stderr.strip()}"
+    r=subprocess.run(["crontab", "-l"],capture_output=True,text=True,timeout=5)
+    if r.returncode != 0: return f"Error leyendo crontab: {r.stderr.strip()}"
+    lines=r.stdout.splitlines()
+    marker="# " + task_id
+    positions=[i for i,line in enumerate(lines) if line == marker]
+    if len(positions) != 1: return "Error: se requiere un único nombre exacto de tarea"
+    index=positions[0]
+    if index+1 >= len(lines) or not lines[index+1].strip() or lines[index+1].lstrip().startswith("#"):
+        return "Error: el marcador no identifica una tarea programada"
+    updated="\n".join(lines[:index]+lines[index+2:])+"\n"
+    result=subprocess.run(["crontab", "-"],input=updated,capture_output=True,text=True,timeout=5)
+    return "OK: Tarea eliminada" if result.returncode==0 else f"Error: {result.stderr.strip()}"
