@@ -35,3 +35,11 @@ tests/mcp_integration_test.py
 # Backups de herramientas de edicion
 *.bak
 *.bak.*
+
+# Local artifacts retained outside version control
+__pycache__/
+*.pyc
+*.bak
+*.bak.[0-9]*
+.blist-baseline-backups/
+bandit-results.json
