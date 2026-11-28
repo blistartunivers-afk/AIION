@@ -141,7 +141,8 @@ def memory_persistence(config_module):
 def cognitive_index(config_module):
     """Instancia de CognitiveIndex con archivos temporales."""
     from aiion.memory.cognitive_index import CognitiveIndex
-    return CognitiveIndex()
+    with patch("aiion.memory.cognitive_index.INDEX_FILE", config_module.AIION_HOME / "cognitive_index.json"):
+        yield CognitiveIndex()
 
 
 @pytest.fixture
